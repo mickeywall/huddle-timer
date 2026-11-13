@@ -219,6 +219,8 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 /* ---------- pop-out (floating window) ---------- */
 .popped { max-width: 520px; margin: 14vh auto 0; padding: 0 20px; }
 .popped .panel { text-align: center; display: grid; gap: 14px; justify-items: center; }
+.popped .dbg { font-size: .7rem; color: var(--muted); text-align: left; max-width: 100%; overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; }
+.popped .dbg:empty { display: none; }
 .pop-btn { display: inline-flex; align-items: center; gap: 6px; }
 .pop-btn svg { flex: none; }
 .top-actions .btn { white-space: nowrap; }
@@ -298,6 +300,7 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
     <h1>Huddle in progress</h1>
     <p class="sub">The timer is in its own floating strip above your other windows.</p>
     <button class="btn primary big" data-action="popIn">Bring it back here</button>
+    <p id="dbg" class="dbg"></p>
   </div>
 </div>
 <div id="shell">
@@ -1027,7 +1030,7 @@ const STRIP_W = 360, STRIP_MAX = 600;
 const shell = $('#shell');
 const away = $('#away');
 let pip = null;                                  // the pop-out window while it is open
-let popHome = null, tuckTimer = 0, lastTuck = '';   // where the strip window was before it tucked itself under the pop-out
+let popHome = null, tuckTimer = 0, tuckTries = 0;   // where the strip window was before it tucked itself under the pop-out
 const canPop = () => 'documentPictureInPicture' in window;
 const isInstalled = () => ['standalone', 'minimal-ui', 'window-controls-overlay'].some(m => matchMedia(`(display-mode: ${m})`).matches);
 const screenBox = () => { const s = window.screen; return { x: s.availLeft || 0, y: s.availTop || 0, w: s.availWidth, h: s.availHeight }; };
@@ -1061,8 +1064,8 @@ async function popOut() {
     startTicker();
     w.addEventListener('pagehide', popIn);       // fires when the pop-out window is closed or sent back by the browser
     render();
-    if (isInstalled() && isStrip) { popHome = home; lastTuck = ''; tuck(); tuckTimer = w.setInterval(tuck, 250); }
-    else { try { w.moveTo(b.x + b.w - STRIP_W - 12, b.y + 48); } catch (e) { /* the browser decides where it goes */ } }
+    // Chrome decides where the pop-out goes (a page can't set its position), so an installed window hides itself instead.
+    if (isInstalled()) { popHome = home; tuckTries = 0; tuck(); tuckTimer = w.setInterval(tuck, 250); }
   } catch (e) { pip = null; doc = document; toast("Couldn't open the floating window here."); }
 }
 
@@ -1070,14 +1073,20 @@ async function popOut() {
 // to sit exactly underneath the (always-on-top) pop-out, and it follows if you drag or resize the pop-out.
 function tuck() {
   if (!pip || !popHome) return;
+  const note = msg => { const d = away.querySelector('#dbg'); if (d) d.textContent = msg; };   // small status line on the strip's placeholder
+  const box = (x, y, w, h) => `${Math.round(x)},${Math.round(y)} ${Math.round(w)}×${Math.round(h)}`;
   try {
-    const t = { x: pip.screenX, y: pip.screenY, w: pip.outerWidth, h: pip.outerHeight };
-    const sig = [t.x, t.y, t.w, t.h].join();
-    if (sig === lastTuck || t.w < 100 || t.h < 100) return;
-    lastTuck = sig;
-    window.resizeTo(t.w, t.h);
-    window.moveTo(t.x, t.y);
-  } catch (e) { /* not allowed here: the strip just stays where it is */ }
+    const x = pip.screenX ?? pip.screenLeft, y = pip.screenY ?? pip.screenTop;
+    const w = pip.outerWidth, h = pip.outerHeight;
+    if (![x, y, w, h].every(Number.isFinite) || w < 100 || h < 100) { note(`Not hiding the strip: the browser doesn't report the pop-out's position (${x}, ${y}, ${w}×${h}).`); return; }
+    const here = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight };
+    const near = (a, b) => Math.abs(a - b) <= 3;
+    if (near(here.x, x) && near(here.y, y) && near(here.w, w) && near(here.h, h)) { note(`Strip hidden under the pop-out (${box(x, y, w, h)}).`); return; }
+    tuckTries++;
+    window.resizeTo(w, h);        // the strip is an app window, so it may move and resize itself
+    window.moveTo(x, y);
+    note(`Hiding the strip, try ${tuckTries}: pop-out is at ${box(x, y, w, h)}, strip was at ${box(here.x, here.y, here.w, here.h)}.`);
+  } catch (e) { note('Hiding the strip failed: ' + (e && e.message)); }
 }
 
 function popIn() {
@@ -1085,6 +1094,7 @@ function popIn() {
   const w = pip, back = popHome;
   try { w.clearInterval(tuckTimer); } catch (e) { /* window already gone */ }
   tuckTimer = 0; popHome = null;
+  const d = away.querySelector('#dbg'); if (d) d.textContent = '';
   pip = null; doc = document;
   document.body.append(shell);
   away.hidden = true;

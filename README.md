@@ -83,10 +83,12 @@ You can turn the automatic move off under Setup > More options.
 4. Randomize, start, and as each person comes up, everyone looks at their Planner column.
 
 You can also float the timer yourself at any time with the small pop-out icon at the top (Chrome and
-Edge only). If you're using the installed app as a narrow strip, the strip window moves and shrinks itself
-to hide directly underneath the floating window (and follows it if you drag it), so only the floating
-window is visible. Click **Dock back** (the same icon), or close the floating window, and the strip goes
-straight back to its exact size and position.
+Edge only). If you're using the installed app, its window moves and shrinks itself to hide directly
+underneath the floating window (and follows it if you drag it), so only the floating window is visible.
+Click **Dock back** (the same icon), or close the floating window, and the app window goes straight back
+to its exact size and position. While popped out, a small status line on the hidden window says whether it
+managed to hide (handy for troubleshooting). Chrome decides where the floating window opens (a page can't
+set its position) and remembers where you last dragged it.
 
 Browsers don't let a page minimize or hide its own window, so this is done by tucking the strip out of
 sight rather than truly hiding it. If the strip's minimum size is larger than the floating window, a
@@ -147,11 +149,12 @@ older "spin" version (a person in a `landed` phase) are converted on load.
   moved back on close; app state stays in the main page. Event listeners are registered through `listen()`
   so they can be replayed on the pop-out's document, and the clock interval and shuffle animation run in
   whichever window currently shows the UI (a hidden main window gets its timers throttled).
-- Pop-out from an installed, strip-sized window (`outerWidth <= STRIP_MAX`): `requestWindow` with the window's
-  inner size. Chrome ignores `moveTo` / `resizeTo` on the pop-out itself, so instead `tuck()` reads the
-  pop-out's actual `screenX/Y` and `outerWidth/Height` every 250 ms and `resizeTo` / `moveTo`s the *main*
-  window onto that rectangle, underneath the always-on-top pop-out. Dock back (`popIn`) restores the saved
-  bounds. A normal tab or a big window is never moved. (Pages can't minimize or hide their own window.)
+- Pop-out from an installed app window (any size): the pop-out's position can't be set by the page
+  (Chrome docs), so `tuck()` reads the pop-out's `screenX/Y` and `outerWidth/Height` every 250 ms and, until
+  the main window matches, keeps calling `resizeTo` / `moveTo` on the *main* window to put it underneath the
+  always-on-top pop-out (so a call the browser ignores is simply retried). If the pop-out's geometry isn't
+  readable it does nothing and says so in the `#dbg` line. Dock back (`popIn`) restores the saved bounds.
+  A normal browser tab is never moved. (Pages can't minimize or hide their own window.)
 - Neither available (Safari, Firefox): nothing moves, and a one-time tip is shown.
 - Restoring: Setup / summary dock the pop-out back, or re-center an installed window that is strip-sized.
 
