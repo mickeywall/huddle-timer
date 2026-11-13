@@ -42,7 +42,7 @@ h3 { margin: 0 0 10px; font-size: .78rem; text-transform: uppercase; letter-spac
 p { margin: 0; }
 .muted { color: var(--muted); }
 .good { color: var(--good); } .bad { color: var(--bad); }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sr { position: absolute; top: 0; left: 0; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- header ---------- */
@@ -83,11 +83,17 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .avatar.xl { --s: clamp(110px, 30cqw, 210px); }
 
 /* ---------- setup ---------- */
-.setup { max-width: 780px; margin: 0 auto; }
-.sub { color: var(--muted); margin-bottom: 22px; }
-.add { display: flex; gap: 10px; margin-bottom: 16px; }
+.setup { max-width: 1160px; margin: 0 auto; }
+.sub { color: var(--muted); margin-bottom: 18px; }
+.add { display: flex; gap: 10px; margin-bottom: 14px; }
 .add input { flex: 1; }
-.people { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 8px; }
+.setup-grid { display: grid; gap: 18px; }
+.s-who { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.s-cfg { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.s-cfg > section { background: var(--panel2); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.s-cfg h3 { margin-bottom: 8px; }
+.s-cfg p { font-size: .88rem; }
+.people { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 /* one slim line per person: photo | name | here-today tick | remove */
 .person { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2); }
 .person .avatar { --s: 34px; }
@@ -102,21 +108,40 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .row-actions { display: flex; align-items: center; }
 .icon-btn { border: 0; background: none; color: var(--muted); width: 30px; height: 30px; border-radius: 9px; font-size: 1rem; }
 .icon-btn:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
-.empty { text-align: center; padding: 26px 10px; border: 2px dashed var(--line); border-radius: 18px; margin-bottom: 22px; color: var(--muted); }
+.empty { text-align: center; padding: 26px 10px; border: 2px dashed var(--line); border-radius: 18px; margin-bottom: 8px; color: var(--muted); }
 .empty .btn { margin-top: 12px; }
-.set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 16px 0; border-top: 1px solid var(--line); }
-.set-row > strong { min-width: 150px; }
-details { border-top: 1px solid var(--line); padding: 14px 0; }
-summary { cursor: pointer; font-weight: 600; color: var(--muted); }
-.opts { display: grid; gap: 12px; padding-top: 14px; }
+.set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.set-row > strong { flex: 1 0 100%; }
+.opts { display: grid; gap: 12px; }
 .opts label { display: flex; align-items: center; gap: 10px; }
 .opts label span { min-width: 0; }
 .opts label.inline { flex-wrap: wrap; }
 .opts input[type=checkbox] { flex: none; }
-.backup { border-top: 1px solid var(--line); padding: 16px 0; display: grid; gap: 10px; }
-.backup .btns { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.btns .go { margin-left: auto; padding: 12px 24px; font-size: 1.05rem; border-radius: 14px; }
+/* the bottom bar: backup buttons on the left, Start huddle on the right */
+.setup-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }
+.setup-bar .go { margin-left: auto; padding: 12px 24px; font-size: 1.05rem; border-radius: 14px; }
 .foot { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 26px; }
+
+/* A wide window: names on the left (in as many columns as fit), the settings in a column on the right, so the Setup
+   screen uses the whole width. When the window is tall enough the page itself never scrolls: a very long name list
+   scrolls inside its own box instead. */
+@media (min-width: 880px) {
+  .setup-grid { grid-template-columns: minmax(0, 1fr) 310px; gap: 28px; }
+  .people { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 6px; }
+  .person .td { display: none; }                  /* two columns of names are narrow: "Here" is enough next to the tick */
+}
+@media (min-width: 880px) and (min-height: 560px) {
+  .app.fit { height: 100vh; max-width: 1500px; display: flex; flex-direction: column; padding-top: 10px; padding-bottom: 10px; }
+  .app.fit .top { padding: 0 0 10px; min-height: 0; }
+  .app.fit #app { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .app.fit .foot { flex: none; margin-top: 8px; }
+  .app.fit .setup { flex: 1 1 auto; width: 100%; max-width: 1460px; min-height: 0; display: flex; flex-direction: column; padding: 22px 26px 20px; }
+  .app.fit .setup-grid { flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  .app.fit .s-cfg { min-height: 0; overflow-y: auto; }
+  .app.fit .people { flex: 1 1 auto; min-height: 0; overflow-y: auto; align-content: start; padding-right: 6px; }
+  .app.fit .setup-bar { flex: none; margin-top: 14px; }
+  .app.fit .people, .app.fit .s-cfg { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+}
 
 /* ---------- huddle ---------- */
 .huddle { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
@@ -142,18 +167,48 @@ summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .order li { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
 .order .num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 .order .oname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 1.05rem; }
-/* randomize: the rows physically slide into new places, then land with a bounce, a sheen, popping numbers and a glow on #1 */
-.order.riffle li { will-change: transform; border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: color-mix(in srgb, var(--accent) 12%, var(--panel2)); }
-.order.fresh li { position: relative; overflow: hidden; animation: settle .55s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(var(--i, 0) * 55ms); }
-.order.fresh li::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .9s ease-out both; animation-delay: calc(var(--i, 0) * 70ms + 250ms); }
-.order.fresh .num { animation: numpop .55s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 160ms); }
-.order.fresh li:first-child { animation: settle .55s cubic-bezier(.34, 1.56, .64, 1) both, firstglow 1.3s ease-out .35s both; }
-@keyframes settle { from { transform: translateY(-14px) scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+/* randomize, part 2: the names are dealt into the list from the middle of the stage (JS), then a sheen sweeps over each
+   row, the numbers pop in, and #1 gets a gold glow */
+.order.fresh li { position: relative; overflow: hidden; }
+.order.fresh li::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .3) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .9s ease-out both; animation-delay: calc(min(var(--i, 0), 16) * 60ms + 450ms); }
+.order.fresh .num { animation: numpop .55s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(min(var(--i, 0), 16) * 60ms + 320ms); }
+.order.fresh li:first-child { border-color: var(--warn); animation: firstglow 1.5s ease-out .7s both; }
+.order.fresh li:first-child .num { background: var(--warn); color: #20160a; }
 @keyframes sheen { to { transform: translateX(130%); } }
 @keyframes numpop { from { transform: scale(0) rotate(-120deg); } to { transform: none; } }
-@keyframes firstglow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 80%, transparent); } 100% { box-shadow: 0 0 0 18px transparent; } }
-.spark { position: absolute; width: 9px; height: 9px; border-radius: 50%; pointer-events: none; z-index: 9; }
-.stage.shuffling .btn { opacity: .5; pointer-events: none; }
+@keyframes firstglow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) 85%, transparent); } 100% { box-shadow: 0 0 0 22px transparent; } }
+
+/* randomize, part 1: a frosted "drawing" screen with a slot reel that spins fast, slows down and clicks onto whoever goes
+   first, then a flash, a ring, and confetti. Click it to skip. */
+.draw { position: absolute; inset: 0; z-index: 8; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 2.4vh, 22px); padding: 16px; cursor: pointer; text-align: center;
+  background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 26%, var(--panel)) 0%, color-mix(in srgb, var(--panel) 92%, transparent) 75%);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: drawin .3s ease-out both; }
+@keyframes drawin { from { opacity: 0; } }
+.draw .aurora { position: absolute; left: 50%; top: 46%; width: max(130%, 620px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(#6f8dff, #c58bff, #ff7a90, #f6b93b, #33d391, #6f8dff); filter: blur(48px); opacity: .34; animation: spinA 2.8s linear infinite; }
+@keyframes spinA { to { rotate: 360deg; } }
+.draw-title { position: relative; font-weight: 800; font-size: .8rem; letter-spacing: .24em; text-transform: uppercase; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(90deg, var(--muted) 20%, var(--text) 50%, var(--muted) 80%); background-size: 240% 100%; animation: shimmer 1.2s linear infinite; }
+@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.reelwrap { --rh: clamp(52px, 10vh, 92px); position: relative; width: min(100%, 460px); height: calc(var(--rh) * 3); border-radius: 26px; box-shadow: var(--shadow), 0 0 0 1px var(--line);
+  background: color-mix(in srgb, var(--panel2) 78%, transparent); animation: reelin .45s cubic-bezier(.2, .9, .25, 1.15) both; }
+@keyframes reelin { from { transform: scale(.86); opacity: 0; } }
+.reel { position: absolute; inset: 0; overflow: hidden; border-radius: 26px; filter: url(#vblur);
+  -webkit-mask-image: linear-gradient(transparent 0, #000 30%, #000 70%, transparent 100%); mask-image: linear-gradient(transparent 0, #000 30%, #000 70%, transparent 100%); }
+.rtrack { will-change: transform; }
+.ri { height: var(--rh); display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 18px; opacity: .4; }
+.ri.cur { opacity: 1; }
+.ri .avatar.m { --s: calc(var(--rh) - 24px); }
+.ri .rn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; font-size: clamp(1.15rem, min(6cqw, 4.4vh), 2.1rem); }
+.sel { position: absolute; left: 8px; right: 8px; top: var(--rh); height: var(--rh); border-radius: 18px; pointer-events: none; border: 2px solid var(--accent);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 0 18px color-mix(in srgb, var(--accent) 22%, transparent); transition: border-color .15s, box-shadow .15s; }
+.reelwrap.locked .sel { border-color: var(--warn); box-shadow: 0 0 40px color-mix(in srgb, var(--warn) 75%, transparent), inset 0 0 22px color-mix(in srgb, var(--warn) 28%, transparent); }
+.shock { position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 3px solid var(--warn); pointer-events: none; opacity: 0; }
+.draw-cap { position: relative; min-height: 2.4em; font-size: clamp(1.1rem, 5cqw, 1.8rem); font-weight: 800; opacity: 0; transform: translateY(12px) scale(.94); transition: opacity .25s, transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.draw-cap.show { opacity: 1; transform: none; }
+.draw-cap .gt { background: linear-gradient(90deg, #ffd66b, #ff7a90, #c58bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.draw-skip { position: relative; font-size: .72rem; color: var(--muted); opacity: .7; }
+.confetti { position: fixed; width: 9px; height: 15px; border-radius: 2px; pointer-events: none; z-index: 60; will-change: transform; }
 .x { flex: none; border: 0; background: none; color: var(--muted); width: 28px; height: 28px; border-radius: 8px; font-size: .95rem; }
 .x:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
 
@@ -285,13 +340,12 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   h1 { font-size: 1.4rem; }
   .sub { margin-bottom: 14px; font-size: .9rem; }
   .add { flex-wrap: wrap; }
-  .set-row > strong { min-width: 0; width: 100%; }
   /* setup rows in a narrow window: the "Here today" words drop out and just the tick stays */
   .person { gap: 6px; padding: 4px 6px; }
   .here-txt { display: none; }
   .person .name-input { padding: 3px 8px; }
   .summary .actions .btn { flex: 1 1 100%; }
-  .backup .btns .go { flex: 1 1 100%; margin-left: 0; }   /* narrow window: Start huddle gets its own full-width row under the backup buttons */
+  .setup-bar .go { flex: 1 1 100%; margin-left: 0; }   /* narrow window: Start huddle gets its own full-width row under the backup buttons */
 }
 
 /* A tall strip: scale everything with the window's height (vh) so the whole column is used, and let the running card
@@ -564,8 +618,9 @@ function sweep(f0, f1, dur, vol = .05, type = 'sawtooth') {   // a rising/fallin
 }
 const SOUNDS = {
   tick(p = 0) { tone(850 + p * 95, 0, .035, .028, 'square'); },                      // the shuffle ticks climb in pitch
-  whoosh() { sweep(180, 1100, .35, .045); },
-  land() { tone(130, 0, .18, .16); tone(660, .05, .35, .09); tone(990, .18, .55, .08); tone(1480, .3, .5, .05); },
+  whoosh() { sweep(160, 1300, .4, .045); },
+  lock() { tone(110, 0, .3, .18); tone(523, .04, .4, .08); tone(659, .12, .45, .08); tone(784, .2, .5, .08); tone(1047, .29, .9, .07); },   // the reel clunks onto the winner
+  deal(i = 0) { tone(600 + i * 55, 0, .07, .03, 'triangle'); },                       // one soft pip per name dealt into the list
   chime() { tone(660, 0, .35, .09); tone(990, .13, .55, .08); },
   warn() { tone(880, 0, .25, .09); },
   timesUp() { tone(440, 0, .45, .12, 'triangle'); tone(330, .38, .8, .12, 'triangle'); }
@@ -678,46 +733,52 @@ function setupHTML() {
     <li class="person ${p.present ? '' : 'away'}" data-id="${p.id}">
       <span class="avwrap"><button class="avatar-btn" data-action="photo" title="Click to add or change the photo (or drop a picture here)" aria-label="Change photo for ${esc(p.name)}">${avatar(p, 's')}<span class="cam" aria-hidden="true">📷</span></button>${p.photo ? `<button class="rm" data-action="removePhoto" title="Remove the photo" aria-label="Remove photo for ${esc(p.name)}">✕</button>` : ''}</span>
       <input class="name-input" type="text" value="${esc(p.name)}" maxlength="60" data-field="name" aria-label="Name">
-      <label class="here" title="Here today"><input type="checkbox" data-field="present" aria-label="Here today" ${p.present ? 'checked' : ''}> <span class="here-txt">Here today</span></label>
+      <label class="here" title="Here today"><input type="checkbox" data-field="present" aria-label="Here today" ${p.present ? 'checked' : ''}> <span class="here-txt">Here<span class="td"> today</span></span></label>
       <span class="row-actions"><button class="icon-btn" data-action="removePerson" aria-label="Remove ${esc(p.name)}" title="Remove from the list">✕</button></span>
     </li>`).join('');
   return `
   <main class="panel setup">
     ${ui.storageOk ? '' : `<div class="banner">Your browser isn't letting this page save anything (a private window can do that), so your list won't be remembered next time.</div>`}
     ${inProgress ? `<div class="banner">A huddle is still in progress. <button class="btn small" data-action="backToHuddle">Back to huddle</button></div>` : ''}
-    <h1>Who's in today's huddle?</h1>
-    <p class="sub">Type a name and press Enter (or paste several, separated by commas), choose how long each person gets, then start. Your list is remembered next time.</p>
-    <form id="addForm" class="add" autocomplete="off">
-      <input id="newName" type="text" maxlength="400" placeholder="Add a name" aria-label="Add a person">
-      <button class="btn primary" type="submit">Add</button>
-    </form>
-    ${people.length ? `<ul class="people">${rows}</ul>` : `<div class="empty"><p>No one on the list yet.</p><button class="btn" data-action="sample">Add a few sample names to try it out</button></div>`}
-    <div class="set-row">
-      <strong>Time per person</strong>
-      <input id="minInput" type="number" min="0" max="60" value="${mins}" data-field="time" aria-label="Minutes"> <span>min</span>
-      <input id="secInput" type="number" min="0" max="59" value="${secs}" data-field="time" aria-label="Seconds"> <span>sec</span>
+    <div class="setup-grid">
+      <section class="s-who">
+        <h1>Who's in today's huddle?</h1>
+        <p class="sub">Type a name and press Enter, or paste several separated by commas.</p>
+        <form id="addForm" class="add" autocomplete="off">
+          <input id="newName" type="text" maxlength="400" placeholder="Add a name" aria-label="Add a person">
+          <button class="btn primary" type="submit">Add</button>
+        </form>
+        ${people.length ? `<ul class="people">${rows}</ul>` : `<div class="empty"><p>No one on the list yet.</p><button class="btn" data-action="sample">Add a few sample names to try it out</button></div>`}
+      </section>
+      <aside class="s-cfg">
+        <section class="set-row">
+          <strong>Time per person</strong>
+          <input id="minInput" type="number" min="0" max="60" value="${mins}" data-field="time" aria-label="Minutes"> <span>min</span>
+          <input id="secInput" type="number" min="0" max="59" value="${secs}" data-field="time" aria-label="Seconds"> <span>sec</span>
+        </section>
+        <section>
+          <h3>Options</h3>
+          <div class="opts">
+            <label title="Moves the window to a narrow strip on the right side of the screen when you press Start huddle"><input type="checkbox" data-field="autoStrip" ${settings.autoStrip ? 'checked' : ''}><span>Move to a side strip when the huddle starts</span></label>
+            <label title="A chime when the next person starts, a beep when time is almost up, and a tone when it runs out"><input type="checkbox" data-field="sound" ${settings.sound ? 'checked' : ''}><span>Play sounds</span></label>
+            <label class="inline"><span>Turn yellow when</span><input type="number" min="0" max="600" value="${settings.warnSec}" data-field="warnSec" aria-label="Warning seconds"><span>seconds are left</span></label>
+          </div>
+        </section>
+        <section>
+          <h3>Backup</h3>
+          <p class="muted">Your list and photos are saved in this browser on this computer. Save a backup file to move them to another computer, or in case the browser's data gets cleared.</p>
+        </section>
+      </aside>
     </div>
-    <details>
-      <summary>More options</summary>
-      <div class="opts">
-        <label title="Moves the window to a narrow strip on the right side of the screen when you press Start huddle"><input type="checkbox" data-field="autoStrip" ${settings.autoStrip ? 'checked' : ''}><span>Move to a side strip when the huddle starts</span></label>
-        <label title="A chime when the next person starts, a beep when time is almost up, and a tone when it runs out"><input type="checkbox" data-field="sound" ${settings.sound ? 'checked' : ''}><span>Play sounds</span></label>
-        <label class="inline"><span>Turn yellow when</span><input type="number" min="0" max="600" value="${settings.warnSec}" data-field="warnSec" aria-label="Warning seconds"><span>seconds are left</span></label>
-      </div>
-    </details>
-    <div class="backup">
-      <p class="muted">Your list and photos are saved in this browser on this computer. Save a backup file to move them to another computer, or in case the browser's data gets cleared.</p>
-      <div class="btns">
-        <button class="btn" data-action="saveBackup">Save backup file</button>
-        <button class="btn" data-action="restoreBackup">Restore from backup</button>
-        <button id="startBtn" class="btn primary go" data-action="startHuddle" ${people.some(p => p.present) ? '' : 'disabled'}>${startLabel()}</button>
-      </div>
+    <div class="setup-bar">
+      <button class="btn" data-action="saveBackup">Save backup file</button>
+      <button class="btn" data-action="restoreBackup">Restore from backup</button>
+      <button id="startBtn" class="btn primary go" data-action="startHuddle" ${people.some(p => p.present) ? '' : 'disabled'}>${startLabel()}</button>
     </div>
   </main>`;
 }
 
 const orderRow = (p, n, i) => `<li data-id="${p.id}" style="--i:${i}">${n ? `<span class="num">${n}</span>` : ''}${avatar(p, 's')}<span class="oname">${esc(p.name)}</span><button class="x" data-action="skipPerson" aria-label="${esc(p.name)} is not here" title="Not here today">✕</button></li>`;
-const plainRow = p => `<li data-id="${p.id}">${avatar(p, 's')}<span class="oname">${esc(p.name)}</span></li>`;
 
 function stageHTML(h) {
   const cur = h.current, pool = queuePeople();
@@ -817,6 +878,7 @@ function render() {
   else if (state.screen === 'summary' && state.huddle) body = summaryHTML(state.huddle);
   else { state.screen = 'setup'; body = setupHTML(); }
   $('#app').className = state.screen === 'huddle' && state.huddle ? 'is-huddle' + (winMode === 'card' ? ' is-card' : '') : '';
+  $('#app').parentNode.classList.toggle('fit', state.screen === 'setup');          // Setup fills the window height (see the CSS)
   $('#app').innerHTML = headerHTML() + body;
   holdAwake(state.screen === 'huddle');
   if (state.screen !== 'huddle') document.title = 'Huddle Timer';
@@ -826,30 +888,56 @@ function render() {
 /* =====================================================================
    The huddle: randomize the order, then each turn starts automatically
    ===================================================================== */
-// A burst of colored sparks from the first row, when the order lands.
-function sparkBurst() {
+// Confetti: paper pieces thrown up from a point, then falling with air drag, gravity and a flutter. They live on the page
+// itself (not inside the stage), so they keep falling while the list is being drawn.
+function confetti(cx, cy, count = 90) {
   if (reduced()) return;
-  const stage = $('#stage'), first = $('#orderList li');
-  if (!stage || !first) return;
-  const sb = stage.getBoundingClientRect(), fb = first.getBoundingClientRect();
-  const cx = fb.left - sb.left + fb.width / 2, cy = fb.top - sb.top + fb.height / 2;
-  const colors = ['#6f8dff', '#33d391', '#f6b93b', '#ff7a90', '#c58bff'];
-  for (let k = 0; k < 20; k++) {
-    const s = doc.createElement('i');
-    s.className = 'spark'; s.style.cssText = `left:${cx}px;top:${cy}px;background:${colors[k % colors.length]}`;
-    stage.appendChild(s);
-    const a = Math.random() * Math.PI * 2, d = 70 + Math.random() * 120;
-    const anim = s.animate(
-      [{ transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
-       { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(0)`, opacity: 0 }],
-      { duration: 650 + Math.random() * 450, easing: 'cubic-bezier(.1, .7, .3, 1)' });
-    anim.onfinish = () => s.remove();
+  const colors = ['#6f8dff', '#33d391', '#f6b93b', '#ff7a90', '#c58bff', '#ffd66b', '#5ad1ff'];
+  for (let k = 0; k < count; k++) {
+    const el = doc.createElement('i');
+    el.className = 'confetti';
+    el.style.cssText = `left:${cx}px;top:${cy}px;background:${colors[k % colors.length]};${k % 3 === 0 ? 'border-radius:50%;width:10px;height:10px;' : ''}`;
+    doc.body.appendChild(el);
+    const ang = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.15, sp = 420 + Math.random() * 560;
+    const vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp, g = 900 + Math.random() * 300, drag = 1.8 + Math.random() * .8;
+    const dur = 1700 + Math.random() * 1100, spin = (Math.random() - .5) * 1400, flip = 360 + Math.random() * 720;
+    const frames = [];
+    for (let s = 0; s <= 12; s++) {
+      const u = s / 12, t = u * dur / 1000, k1 = (1 - Math.exp(-drag * t)) / drag;
+      frames.push({
+        transform: `translate(${(vx * k1).toFixed(1)}px, ${((vy - g / drag) * k1 + (g / drag) * t).toFixed(1)}px) rotate(${(spin * u).toFixed(0)}deg) rotateX(${(flip * u).toFixed(0)}deg)`,
+        opacity: u > .75 ? (1 - u) / .25 : 1
+      });
+    }
+    const a = el.animate(frames, { duration: dur, easing: 'linear', fill: 'forwards' });
+    a.onfinish = () => el.remove();
   }
 }
 
-// Randomize: the names' rows physically slide into new places, faster at first and then slowing down like a slot
-// machine, and the last hop lands on the real order with a bounce. The real order is decided and saved up front; the
-// animation is just for show (and a safety timer makes sure it always finishes).
+// The second half of Randomize: after the reel, the names are dealt into the numbered list from the middle of the stage,
+// one after another, each with a soft pip (the sheen, the popping numbers and the glow on #1 are CSS, see .order.fresh).
+function dealCards() {
+  if (reduced()) return;
+  const stage = $('#stage'), rows = doc.querySelectorAll('#orderList li');
+  if (!stage || !rows.length) return;
+  const w = curWin(), sb = stage.getBoundingClientRect(), ox = sb.left + sb.width / 2, oy = sb.top + Math.min(sb.height * .3, 220);
+  const gap = Math.min(60, 900 / rows.length);                       // everyone is dealt within about a second
+  rows.forEach((li, i) => {
+    const b = li.getBoundingClientRect(), d = i * gap, side = i % 2 ? 1 : -1;
+    li.animate([
+      { transform: `translate(${ox - (b.left + b.width / 2)}px, ${oy - (b.top + b.height / 2)}px) scale(.3) rotate(${side * (10 + Math.random() * 14)}deg)`, opacity: 0 },
+      { opacity: 1, offset: .25 },
+      { transform: 'none', opacity: 1 }
+    ], { duration: 680, delay: d, easing: 'cubic-bezier(.2, .85, .25, 1.1)', fill: 'backwards' });
+    if (i < 12) w.setTimeout(() => sound('deal', i), d + 140);
+  });
+}
+
+// Randomize. The real order is decided and saved first; everything after that is show:
+//   1. a frosted "drawing" screen with a slot reel: the names blur past (a vertical motion blur that fades as it slows),
+//      tick faster and then slower, and the reel clunks onto whoever goes first, with a ring, a gold glow and confetti;
+//   2. the screen fades and the names are dealt into the numbered list (dealCards).
+// Click the drawing screen to skip it. A safety timer makes sure the UI can never get stuck.
 function randomize() {
   const h = state.huddle;
   if (!h || h.current || ui.busy) return;
@@ -858,48 +946,78 @@ function randomize() {
   ensureAudio();
   h.queue = ids; h.ordered = true; saveSession();
   const w = curWin();
-  const settle = () => { ui.busy = false; ui.fresh = true; render(); w.setTimeout(sparkBurst, 320); };
-  const stage = $('#stage'), ul = $('#orderList');
-  if (ids.length < 2 || reduced() || !stage || !ul) { sound('chime'); settle(); return; }
+  const settle = () => { ui.busy = false; ui.fresh = true; render(); dealCards(); };
+  const stage = $('#stage');
+  if (ids.length < 2 || reduced() || !stage) { sound('chime'); settle(); return; }
   ui.busy = true;
-  stage.classList.add('shuffling'); ul.classList.add('riffle');
-  // rebuild the list as plain rows that we can move around (same people, current order)
-  const startIds = Array.from(ul.children).map(li => li.dataset.id).filter(id => person(id));
-  ul.innerHTML = startIds.map(person).map(plainRow).join('');
-  const rows = new Map(Array.from(ul.children).map(li => [li.dataset.id, li]));
-  // FLIP: remember where each row is, reorder the DOM, then animate every row from its old place to its new one
-  const hop = (order, dur, easing, tiltMax) => {
-    const before = new Map(); rows.forEach((li, id) => before.set(id, li.getBoundingClientRect().top));
-    order.forEach(id => { const li = rows.get(id); if (li) ul.appendChild(li); });
-    rows.forEach((li, id) => {
-      const dy = before.get(id) - li.getBoundingClientRect().top;
-      if (!dy) return;
-      li.animate([{ transform: `translateY(${dy}px) scale(${tiltMax ? 1.04 : 1}) rotate(${(Math.random() * 2 - 1) * tiltMax}deg)` }, { transform: 'none' }],
-        { duration: dur, easing });
-    });
-  };
-  const delays = [90, 90, 95, 100, 110, 125, 145, 170, 200, 240];   // the pause between hops grows: it slows down
-  let finished = false, i = 0, last = startIds.join();
+
+  // A long column of names that ends on the winner (ids[0]), with a spare name above and below to fill the empty rows.
+  const rnd = avoid => { let id, n = 0; do { id = ids[randInt(ids.length)]; } while (avoid.includes(id) && n++ < 12); return id; };
+  const L = clamp(ids.length * 3, 28, 46), seq = [rnd([])];
+  for (let i = 1; i < L; i++) seq.push(rnd(i >= L - 3 ? [seq[i - 1], ids[0]] : [seq[i - 1]]));
+  seq.push(ids[0]);
+  const items = [rnd([seq[0]]), ...seq, rnd([ids[0]])];
+  const W = items.length - 2;                                        // the winner's place in the column; the reel starts on item 1
+  const ri = (id, k) => { const p = person(id); return `<div class="ri${k === 1 ? ' cur' : ''}">${avatar(p, 'm')}<span class="rn">${esc(p.name)}</span></div>`; };
+  const draw = doc.createElement('div');
+  draw.className = 'draw'; draw.id = 'draw';
+  draw.innerHTML = `<div class="aurora"></div>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="vblur" x="0" y="-10%" width="100%" height="120%"><feGaussianBlur id="vblurF" stdDeviation="0 0"/></filter></svg>
+    <div class="draw-title">Drawing the order</div>
+    <div class="reelwrap" id="reelWrap"><div class="reel"><div class="rtrack" id="rtrack">${items.map(ri).join('')}</div></div><div class="sel"></div><div class="shock"></div></div>
+    <div class="draw-cap" id="drawCap"><span class="em">🎉</span> <span class="gt">${esc(person(ids[0]).name)} goes first!</span></div>
+    <div class="draw-skip">Click to skip</div>`;
+  stage.appendChild(draw);
+  const track = $('#rtrack'), wrap = $('#reelWrap'), cap = $('#drawCap'), blur = $('#vblurF');
+  const rh = wrap.clientHeight / 3 || 70;
+
+  const D = 2100, OVER = .3, BACK = 260, HOLD = 1000;                // the spin, the little overshoot, the settle back, the pause on the winner
+  const easeIO = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  const idxAt = ms => ms < D ? 1 + (W - 1 + OVER) * (1 - Math.pow(1 - ms / D, 3.2)) : W + OVER * (1 - easeIO(clamp((ms - D) / BACK, 0, 1)));
+  let finished = false, locked = false, start = 0, lastIdx = 1, lastMs = 0, lastRound = 1, lastTick = -99;
   const finish = () => { if (!finished) { finished = true; settle(); } };
-  const step = () => {
+  const leave = () => {
     if (finished) return;
-    if (i < delays.length) {
-      const d = delays[i++];
-      let order = shuffle(ids), tries = 0;
-      while ((order.join() === last || (i === delays.length && order.join() === ids.join())) && tries++ < 8) order = shuffle(ids);
-      last = order.join();
-      sound('tick', i);
-      hop(order, d + 70, 'cubic-bezier(.2, .9, .25, 1)', 2.2);
-      w.setTimeout(step, d);
-    } else {                                           // the real order, with a bouncy landing
-      sound('whoosh');
-      hop(ids, 520, 'cubic-bezier(.34, 1.56, .64, 1)', 0);
-      sound('land');
-      w.setTimeout(finish, 600);
-    }
+    draw.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: 'forwards' }).onfinish = finish;
+    w.setTimeout(finish, 450);
   };
-  step();
-  setTimeout(finish, 4500);   // safety net on the main window (the pop-out may close, or frames may pause)
+  const lock = () => {
+    if (locked || finished) return;
+    locked = true;
+    track.style.transform = `translate3d(0, ${-(W - 1) * rh}px, 0)`;
+    blur.setAttribute('stdDeviation', '0 0');
+    Array.from(track.children).forEach((el, k) => el.classList.toggle('cur', k === W));
+    wrap.classList.add('locked'); cap.classList.add('show');
+    $('#sr').textContent = `${person(ids[0]).name} goes first`;
+    sound('lock');
+    wrap.querySelector('.shock').animate([{ transform: 'scale(.3)', opacity: .9 }, { transform: 'scale(4.6)', opacity: 0 }], { duration: 850, easing: 'cubic-bezier(.1, .7, .3, 1)' });
+    wrap.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }], { duration: 440, easing: 'ease-out' });
+    const r = wrap.getBoundingClientRect();
+    confetti(r.left + r.width / 2, r.top + r.height / 2);
+    w.setTimeout(leave, HOLD);
+  };
+  const frame = () => {
+    if (finished || locked) return;
+    const ms = Date.now() - start, idx = idxAt(ms), r = Math.round(idx);
+    track.style.transform = `translate3d(0, ${-(idx - 1) * rh}px, 0)`;
+    if (r !== lastRound) {                                           // a new name is in the middle: light it up, and tick
+      if (track.children[lastRound]) track.children[lastRound].classList.remove('cur');
+      if (track.children[r]) track.children[r].classList.add('cur');
+      lastRound = r;
+      if (ms < D && ms - lastTick > 55) { lastTick = ms; sound('tick', Math.min(14, ms / D * 14)); }
+    }
+    const dt = (ms - lastMs) / 1000;
+    if (dt > .004) {                                                 // blur follows the speed: heavy at first, gone when it stops
+      blur.setAttribute('stdDeviation', `0 ${clamp(Math.abs(idx - lastIdx) * rh / dt / 650, 0, 9).toFixed(1)}`);
+      lastIdx = idx; lastMs = ms;
+    }
+    if (ms >= D + BACK) lock(); else w.requestAnimationFrame(frame);
+  };
+  draw.addEventListener('click', finish);
+  start = Date.now();
+  sound('whoosh');
+  w.requestAnimationFrame(frame);
+  setTimeout(finish, 6500);   // safety net on the main window (the pop-out may close, or frames may pause in a hidden window)
 }
 
 function startNext() {
@@ -1092,7 +1210,7 @@ const actions = {
     }
     toast('Summary copied – paste it into Teams');
   },
-  newHuddle() { state.huddle = null; state.screen = 'setup'; saveSession(); render(); }
+  newHuddle() { state.huddle = null; state.screen = 'setup'; saveSession(); render(); if (isInstalled() && !pip) centerWindow(true); }
 };
 
 listen('click', e => {
@@ -1166,7 +1284,7 @@ listen('keydown', e => {
 /* =====================================================================
    Windows: centered setup -> narrow side strip -> back again.
    - Installed app window (Chrome/Edge let an installed app resize and move itself). Always ONE window, in one of:
-       setup / summary: a normal centered window (the app also opens centered).
+       setup: a big centered window that fills the screen (the app opens like this); summary: a smaller centered one.
        'dock': during a huddle, snapped to the right edge of the screen as a strip. If you drag or resize it, it
                snaps straight back as soon as you let go (a page can't truly freeze its own window).
        'card': after "Pop out": a small square window of FIXED SIZE that you can move. If you resize it, it
@@ -1300,9 +1418,11 @@ function popInPip() {
 function popOut() { if (isInstalled()) popOutCard(); else popOutPip(); }
 function popIn() { if (isInstalled() && !pip) dockSide(); else popInPip(); }
 
-// A normal centered window, for the app's launch, Setup and the summary.
-function centerWindow() {
-  const b = screenBox(), w = Math.min(980, b.w - 80), h = Math.min(860, b.h - 80);
+// A normal window, centered. The app's launch and Setup (big = true) fill the screen's work area, up to 1600 x 1000 on a
+// very large monitor, so there is room for the whole Setup screen without scrolling; the summary gets a smaller one.
+function centerWindow(big = true) {
+  const b = screenBox();
+  const w = big ? Math.min(b.w, 1600) : Math.min(980, b.w - 80), h = big ? Math.min(b.h, 1000) : Math.min(860, b.h - 80);
   if (hasScreen(b)) placeWindow(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2), w, h);
 }
 
@@ -1326,7 +1446,7 @@ function leaveStrip() {
   const wasMode = !!winMode;
   stopLock(); winMode = null;
   if (pip) popInPip();
-  if (isInstalled() && (wasMode || window.outerWidth <= STRIP_MAX)) centerWindow();
+  if (isInstalled() && (wasMode || window.outerWidth <= STRIP_MAX)) centerWindow(state.screen === 'setup');
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -1347,7 +1467,7 @@ document.addEventListener('visibilitychange', () => {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* optional feature */ }));
   }
   if (state.screen === 'huddle') enterStrip({ gesture: false });
-  else if (isInstalled()) centerWindow();          // the installed app opens centered for Setup
+  else if (isInstalled()) centerWindow(state.screen !== 'summary');   // the installed app opens big and centered for Setup
   else leaveStrip();
 })();
 })();

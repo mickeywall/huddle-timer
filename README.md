@@ -13,12 +13,15 @@ Everything runs in the browser, and nothing is ever uploaded.
 
 1. Open the page and add everyone's name. You can paste several at once, separated by commas.
    Click a round picture to add a photo, or drag a photo from your computer onto someone's row.
+   On a wide window the names sit on the left (in as many columns as fit) and the settings on the right,
+   so the page doesn't need to scroll; only a very long name list scrolls inside its own box.
 2. Set **Time per person** (for example 2 min).
 3. Untick **Here today** for anyone who is out.
 4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
    "Beside Planner" below for how that works in each browser).
-5. Press **Randomize order**. The names slide around, slowing down like a slot machine, then land in a
-   numbered list with a bounce, a shine, popping numbers and a burst of sparks. Not happy with it?
+5. Press **Randomize order**. A "drawing" screen appears with a slot reel: the names blur past, ticking,
+   and slow down until the reel clunks onto whoever goes first, with a flash, a ring and confetti (click it to
+   skip). Then everyone is dealt into a numbered list, with the first person in gold. Not happy with it?
    Press **Randomize again**. Then press **Start** (it says who goes first).
 6. Each person's countdown runs. Press **Done** when they finish and the next person starts automatically
    (the button names who is next). **Pause** stops the clock. The **Up next** list shows everyone
@@ -62,7 +65,7 @@ list looks empty in the installed app, add the team once there, or use **Restore
 
 ## Beside Planner in a Teams meeting
 
-Setup uses a normal, centered window. When you press **Start huddle** the app moves into a narrow strip
+Setup uses a big window that fills the screen. When you press **Start huddle** the app moves into a narrow strip
 (about 360 pixels wide) on the right side of your screen, and everything (the clock, the buttons, the
 Up next list) fits in that strip. How that happens depends on how you opened it:
 
@@ -91,8 +94,9 @@ You can turn the automatic move off under Setup > More options.
   **Done** and **Not here** lists shrink first). As people finish and drop off **Up next**, it stops
   scrolling once everything fits. In a very short window the two totals (huddle time, time per person) are
   hidden so the lists keep the room.
-- **Opens centered (installed app):** the installed app opens as a normal centered window for Setup. Setup
-  and the summary are always normal centered windows.
+- **Opens big (installed app):** the installed app opens as a big window that fills the screen (on a very
+  large monitor, 1600 x 1000, centered) for Setup. Setup is always that big window; the summary after a
+  huddle is a smaller centered one.
 - **Docked (the default during a huddle):** when you press Start huddle, the window resizes and snaps to the
   right edge of the screen, full height, as a strip. It is locked there: a resize is refused on the spot, and
   if you drag it away it snaps straight back as soon as you let go. (A web page can't truly freeze its own window, so letting go is when it
@@ -153,10 +157,14 @@ loosened deliberately, adding only
 ### Huddle flow
 
 `h.ordered` is false until **Randomize order** is pressed (queue is in list order), then true. `randomize()`
-decides and saves the order first and only then plays the shuffle animation, with a safety timer so the UI
-can never get stuck. The animation is FLIP: it reorders the real rows in the DOM and animates each from its
-old place with the Web Animations API (ten hops with growing pauses, then a bouncy landing on the real order),
-followed by CSS keyframes (shine, number pop, glow on #1) and `sparkBurst()`. In a narrow window, sizes in the
+decides and saves the order first and only then plays the show, with a safety timer (6.5 s) so the UI can
+never get stuck. Part 1 is a `.draw` overlay inside the stage: a long column of names that ends on the winner,
+moved by a time-based `requestAnimationFrame` loop (`idxAt()`: a decelerating curve, a small overshoot, a
+settle back), with a vertical-only SVG blur (`#vblur`, `feGaussianBlur`) whose strength follows the speed, a
+tick per name, and then a lock-in (ring, gold glow, `confetti()`, which lives on the page body so it keeps
+falling after the overlay is gone) and a fade; clicking it skips. Part 2 is `dealCards()`: the real list rows
+fly in from the middle of the stage (Web Animations API), followed by CSS keyframes (sheen, number pop, glow
+on #1). In a narrow window, sizes in the
 running view use `clamp()` with `vh` units and the running card grows to take leftover height, so a tall strip
 is filled instead of leaving empty space at the bottom. The running view never scrolls as a whole
 (`#app.is-huddle` is the window height with `overflow: hidden`): the running card keeps its height and the
@@ -164,6 +172,15 @@ lists inside shrink and scroll instead (`.order`, `.side .card .list`; Done / No
 Up next), see the "never scrolls as a whole" block in the CSS. `startNext()` takes the first id off `h.queue` and starts its timer; it runs from
 **Start** and from every Done/skip, which is what makes turns chain automatically. Saved sessions from the
 older "spin" version (a person in a `landed` phase) are converted on load.
+
+### Setup layout
+
+From 880 px wide the Setup screen is a two-column grid (`.setup-grid`): the names (`.people`, auto-fill
+columns of at least 290 px) on the left, the settings cards (`.s-cfg`) on the right, and a bottom bar with the
+backup buttons and Start huddle. `render()` puts a `fit` class on `.app` for Setup; when the window is also
+at least 560 px tall, `.app.fit` is exactly the window height, so the page never scrolls: only `.people` (and
+the settings column in a very short window) scroll inside their own boxes. Narrower windows stack everything
+and the page scrolls normally.
 
 ### Window handling (`enterStrip` / `leaveStrip`)
 
@@ -180,7 +197,8 @@ older "spin" version (a person in a `landed` phase) are converted on load.
   left or top edge also shifts the window). Moves fire no event, so those are caught by the watcher. `popOutCard()`
   makes the 520 x 520 card (position from `huddle-timer/float` in `localStorage`, else top-right) and adds the
   `is-card` class for the condensed layout; `dockSide()` saves the card's position and docks again. The app also
-  calls `centerWindow()` at launch and for Setup / summary. This replaced earlier designs that used a Document
+  calls `centerWindow(big)` at launch and for Setup (the screen's work area, at most 1600 x 1000) and for the
+  summary (smaller, at most 980 x 860). This replaced earlier designs that used a Document
   Picture-in-Picture window and tried to hide the app window under it (needed clicks, retried constantly,
   flickered): don't go back to that.
 - **Normal browser tab:** the pop-out uses the Document Picture-in-Picture API (Chrome / Edge 116+, desktop; it
