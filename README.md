@@ -86,6 +86,11 @@ You can turn the automatic move off under Setup > More options.
 
 **Docked strip, or a small square window (the icon at the top).**
 
+- **The strip never scrolls as a whole.** If the team is big, the list that is too long gets its own small
+  scroll bar instead: the name list before the first turn, then **Up next** while the huddle runs (the
+  **Done** and **Not here** lists shrink first). As people finish and drop off **Up next**, it stops
+  scrolling once everything fits. In a very short window the two totals (huddle time, time per person) are
+  hidden so the lists keep the room.
 - **Opens centered (installed app):** the installed app opens as a normal centered window for Setup. Setup
   and the summary are always normal centered windows.
 - **Docked (the default during a huddle):** when you press Start huddle, the window resizes and snaps to the
@@ -153,7 +158,10 @@ can never get stuck. The animation is FLIP: it reorders the real rows in the DOM
 old place with the Web Animations API (ten hops with growing pauses, then a bouncy landing on the real order),
 followed by CSS keyframes (shine, number pop, glow on #1) and `sparkBurst()`. In a narrow window, sizes in the
 running view use `clamp()` with `vh` units and the running card grows to take leftover height, so a tall strip
-is filled instead of leaving empty space at the bottom. `startNext()` takes the first id off `h.queue` and starts its timer; it runs from
+is filled instead of leaving empty space at the bottom. The running view never scrolls as a whole
+(`#app.is-huddle` is the window height with `overflow: hidden`): the running card keeps its height and the
+lists inside shrink and scroll instead (`.order`, `.side .card .list`; Done / Not here give way first, then
+Up next), see the "never scrolls as a whole" block in the CSS. `startNext()` takes the first id off `h.queue` and starts its timer; it runs from
 **Start** and from every Done/skip, which is what makes turns chain automatically. Saved sessions from the
 older "spin" version (a person in a `landed` phase) are converted on load.
 
