@@ -1052,12 +1052,16 @@ async function popOut() {
     // Remember where this window is. If it is an installed strip, it tucks itself away underneath the pop-out (see
     // tuck) and returns here on Dock back, so only the floating window is ever visible.
     const home = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight, iw: window.innerWidth, ih: window.innerHeight };
-    const isStrip = home.w <= STRIP_MAX;
-    const w = await window.documentPictureInPicture.requestWindow(isStrip ? { width: home.iw, height: home.ih } : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
+    // Installed app: ask for a floating window at least as big as this window is right now, so this window can always
+    // shrink or grow to fit exactly underneath it (a window can't get smaller than its own minimum size).
+    const w = await window.documentPictureInPicture.requestWindow(isInstalled()
+      ? { width: Math.max(home.iw, STRIP_W), height: Math.max(home.ih, 400) }
+      : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
     pip = w;
     w.document.documentElement.lang = 'en';
     w.document.head.append(document.head.querySelector('style').cloneNode(true));
     LISTENERS.forEach(([type, fn]) => w.document.addEventListener(type, fn));
+    w.document.addEventListener('click', tuck);      // a click inside the pop-out lets the browser accept a resize of the pop-out itself
     w.document.body.append(shell);
     doc = w.document;
     away.hidden = false;
@@ -1083,6 +1087,9 @@ function tuck() {
     const near = (a, b) => Math.abs(a - b) <= 3;
     if (near(here.x, x) && near(here.y, y) && near(here.w, w) && near(here.h, h)) { note(`Strip hidden under the pop-out (${box(x, y, w, h)}).`); return; }
     tuckTries++;
+    // If this window can't get as small as the pop-out (it has a minimum size), grow the pop-out instead (the browser only
+    // allows that right after a click inside the pop-out, so this is also retried from its click handler).
+    if (here.w > w + 3 || here.h > h + 3) { try { pip.resizeTo(Math.max(w, here.w), Math.max(h, here.h)); } catch (e) { /* needs a click in the pop-out */ } }
     window.resizeTo(w, h);        // the strip is an app window, so it may move and resize itself
     window.moveTo(x, y);
     note(`Hiding the strip, try ${tuckTries}: pop-out is at ${box(x, y, w, h)}, strip was at ${box(here.x, here.y, here.w, here.h)}.`);

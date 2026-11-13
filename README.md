@@ -88,7 +88,9 @@ underneath the floating window (and follows it if you drag it), so only the floa
 Click **Dock back** (the same icon), or close the floating window, and the app window goes straight back
 to its exact size and position. While popped out, a small status line on the hidden window says whether it
 managed to hide (handy for troubleshooting). Chrome decides where the floating window opens (a page can't
-set its position) and remembers where you last dragged it.
+set its position) and remembers where you last dragged it. If Chrome makes the floating window narrower
+than the app window can shrink, a sliver of the app window shows until you click anywhere inside the
+floating window once; it then widens itself to cover the app window.
 
 Browsers don't let a page minimize or hide its own window, so this is done by tucking the strip out of
 sight rather than truly hiding it. If the strip's minimum size is larger than the floating window, a
@@ -152,8 +154,12 @@ older "spin" version (a person in a `landed` phase) are converted on load.
 - Pop-out from an installed app window (any size): the pop-out's position can't be set by the page
   (Chrome docs), so `tuck()` reads the pop-out's `screenX/Y` and `outerWidth/Height` every 250 ms and, until
   the main window matches, keeps calling `resizeTo` / `moveTo` on the *main* window to put it underneath the
-  always-on-top pop-out (so a call the browser ignores is simply retried). If the pop-out's geometry isn't
-  readable it does nothing and says so in the `#dbg` line. Dock back (`popIn`) restores the saved bounds.
+  always-on-top pop-out (so a call the browser ignores is simply retried). The pop-out is requested at least
+  as big as the main window so the main window can always fit under it; if the browser still makes it smaller
+  than the main window's minimum size, `tuck()` grows the pop-out with `pip.resizeTo` (the browser only allows
+  that during a click inside the pop-out, so `tuck` also runs from the pop-out's click handler). If the
+  pop-out's geometry isn't readable it does nothing and says so in the `#dbg` line. Dock back (`popIn`)
+  restores the saved bounds.
   A normal browser tab is never moved. (Pages can't minimize or hide their own window.)
 - Neither available (Safari, Firefox): nothing moves, and a one-time tip is shown.
 - Restoring: Setup / summary dock the pop-out back, or re-center an installed window that is strip-sized.
