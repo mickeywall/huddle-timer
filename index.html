@@ -390,6 +390,7 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .is-huddle .prep .order { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
   .is-huddle .prep .order > li { flex: 0 0 auto; }                         /* rows keep their height; the list scrolls instead of squashing them */
   .is-huddle .side { flex: 0 1 auto; min-height: 0; overflow: hidden; }
+  .is-huddle .stage:not(.turn) + .side { flex-shrink: 0; }                  /* before the first turn the stage gives way (its name list scrolls), not the totals card */
   .is-huddle .side .card { flex-shrink: 0; }
   .is-huddle .side .upnext, .is-huddle .side .donecard, .is-huddle .side .nothere { display: flex; flex-direction: column; min-height: 0; }
   .is-huddle .side .upnext { flex-shrink: 1; min-height: 110px; }
