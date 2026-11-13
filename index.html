@@ -1027,6 +1027,7 @@ const STRIP_W = 360, STRIP_MAX = 600;
 const shell = $('#shell');
 const away = $('#away');
 let pip = null;                                  // the pop-out window while it is open
+let popHome = null, tuckTimer = 0, lastTuck = '';   // where the strip window was before it tucked itself under the pop-out
 const canPop = () => 'documentPictureInPicture' in window;
 const isInstalled = () => ['standalone', 'minimal-ui', 'window-controls-overlay'].some(m => matchMedia(`(display-mode: ${m})`).matches);
 const screenBox = () => { const s = window.screen; return { x: s.availLeft || 0, y: s.availTop || 0, w: s.availWidth, h: s.availHeight }; };
@@ -1045,11 +1046,11 @@ async function popOut() {
   if (pip || !canPop()) return;
   try {
     const b = screenBox();
-    // If this window already is the strip, the pop-out takes its exact place (same size, same spot) so only one
-    // window is visible, and Dock back simply reveals this window again, unchanged. Otherwise it goes to the right edge.
+    // Remember where this window is. If it is an installed strip, it tucks itself away underneath the pop-out (see
+    // tuck) and returns here on Dock back, so only the floating window is ever visible.
     const home = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight, iw: window.innerWidth, ih: window.innerHeight };
-    const cover = home.w <= STRIP_MAX;
-    const w = await window.documentPictureInPicture.requestWindow(cover ? { width: home.iw, height: home.ih } : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
+    const isStrip = home.w <= STRIP_MAX;
+    const w = await window.documentPictureInPicture.requestWindow(isStrip ? { width: home.iw, height: home.ih } : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
     pip = w;
     w.document.documentElement.lang = 'en';
     w.document.head.append(document.head.querySelector('style').cloneNode(true));
@@ -1060,21 +1061,36 @@ async function popOut() {
     startTicker();
     w.addEventListener('pagehide', popIn);       // fires when the pop-out window is closed or sent back by the browser
     render();
-    try {
-      if (cover) { w.resizeTo(home.w, home.h); w.moveTo(home.x, home.y); }
-      else w.moveTo(b.x + b.w - STRIP_W - 12, b.y + 48);
-    } catch (e) { /* the browser decides where it goes */ }
+    if (isInstalled() && isStrip) { popHome = home; lastTuck = ''; tuck(); tuckTimer = w.setInterval(tuck, 250); }
+    else { try { w.moveTo(b.x + b.w - STRIP_W - 12, b.y + 48); } catch (e) { /* the browser decides where it goes */ } }
   } catch (e) { pip = null; doc = document; toast("Couldn't open the floating window here."); }
+}
+
+// Browsers won't let a page minimize or hide its own window, so an installed strip hides by resizing and moving itself
+// to sit exactly underneath the (always-on-top) pop-out, and it follows if you drag or resize the pop-out.
+function tuck() {
+  if (!pip || !popHome) return;
+  try {
+    const t = { x: pip.screenX, y: pip.screenY, w: pip.outerWidth, h: pip.outerHeight };
+    const sig = [t.x, t.y, t.w, t.h].join();
+    if (sig === lastTuck || t.w < 100 || t.h < 100) return;
+    lastTuck = sig;
+    window.resizeTo(t.w, t.h);
+    window.moveTo(t.x, t.y);
+  } catch (e) { /* not allowed here: the strip just stays where it is */ }
 }
 
 function popIn() {
   if (!pip) return;
-  const w = pip;
+  const w = pip, back = popHome;
+  try { w.clearInterval(tuckTimer); } catch (e) { /* window already gone */ }
+  tuckTimer = 0; popHome = null;
   pip = null; doc = document;
   document.body.append(shell);
   away.hidden = true;
   startTicker();
   render();
+  if (back) { try { window.resizeTo(back.w, back.h); window.moveTo(back.x, back.y); } catch (e) { /* not allowed here */ } }   // back exactly where it was
   try { w.close(); } catch (e) { /* already closed */ }
 }
 
@@ -1084,7 +1100,7 @@ async function enterStrip({ gesture = true } = {}) {
   if (isInstalled()) {
     if (window.outerWidth <= STRIP_MAX) return;                       // already a strip
     const b = screenBox();
-    try { window.resizeTo(STRIP_W, b.h); window.moveTo(b.x + b.w - STRIP_W, b.y); } catch (e) { /* not allowed here */ }
+    if (b.w >= 500 && b.h >= 400) { try { window.resizeTo(STRIP_W, b.h); window.moveTo(b.x + b.w - STRIP_W, b.y); } catch (e) { /* not allowed here */ } }
     await sleep(300);
     if (window.outerWidth <= STRIP_MAX) return;                       // it worked
   }
@@ -1095,10 +1111,11 @@ async function enterStrip({ gesture = true } = {}) {
 
 // Called for Setup / summary: dock the pop-out back, or restore a centered window if the installed app is a narrow strip.
 function leaveStrip() {
-  if (pip) { popIn(); return; }
-  if (isInstalled() && window.outerWidth <= STRIP_MAX) {
+  const wasTucked = !!popHome;
+  if (pip) popIn();
+  if (isInstalled() && (wasTucked || window.outerWidth <= STRIP_MAX)) {
     const b = screenBox(), w = Math.min(980, b.w - 80), h = Math.min(860, b.h - 80);
-    try { window.resizeTo(w, h); window.moveTo(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2)); } catch (e) { /* not allowed here */ }
+    if (b.w >= 500 && b.h >= 400) { try { window.resizeTo(w, h); window.moveTo(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2)); } catch (e) { /* not allowed here */ } }
   }
 }
 
