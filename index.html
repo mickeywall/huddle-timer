@@ -163,21 +163,35 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .order li { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
 .order .num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 .order .oname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 1.05rem; }
-/* randomize: every row turns into a little slot reel. All the names roll through every row at once (blurred while fast), and the
-   rows stop one at a time, top to bottom, each with a click and its number popping in. Then the list settles into place.
-   Nothing flies around: the tiles stay put and the names spin inside them. Click to skip. */
-.stage.shuffling { cursor: pointer; }
-.stage.shuffling .btn { pointer-events: none; opacity: .55; }
-.order li .rwin { flex: 1; min-width: 0; overflow: hidden; position: relative; }
-.order li .rwin.rolling { -webkit-mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); mask-image: linear-gradient(transparent, #000 24%, #000 76%, transparent); }
-.order li .rtrk { will-change: transform, filter; }
-.order li .rtrk .ri { display: flex; align-items: center; gap: 12px; min-width: 0; height: var(--ah); }
-.order .num.q { background: var(--panel); color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); animation: qpulse 1s ease-in-out infinite; }
-@keyframes qpulse { 50% { opacity: .5; } }
-.order li.locked { animation: lockflash .55s ease-out; }
-.order li.locked .num { animation: numpop .45s cubic-bezier(.34, 1.56, .64, 1) both; }
-@keyframes lockflash { 0% { transform: scale(1.03); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--panel2)); box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 65%, transparent); } 100% { transform: none; } }
+/* randomize: a card shuffle. The name tiles gather into a deck on a frosted screen over the stage, the deck is cut and riffled
+   together twice, and then the cards are dealt one by one into the numbered list, each row coming alive as its card lands.
+   Confetti at the end. Nobody is singled out. Click to skip. */
+.order.dealing li { visibility: hidden; }
+.order li.in { position: relative; overflow: hidden; }
+.order li.in::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .3) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .8s ease-out both; }
+.order li.in .num { animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+@keyframes sheen { to { transform: translateX(130%); } }
 @keyframes numpop { from { transform: scale(0) rotate(-120deg); } to { transform: none; } }
+
+.scr { position: fixed; z-index: 40; overflow: hidden; cursor: pointer; }
+.scr.go { pointer-events: none; cursor: default; }
+.scr-bg { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 16px 16px 18px; text-align: center;
+  background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--accent) 26%, var(--panel)) 0%, color-mix(in srgb, var(--panel) 90%, transparent) 78%);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: drawin .3s ease-out both; }
+@keyframes drawin { from { opacity: 0; } }
+.aurora { position: absolute; left: 50%; top: 48%; width: max(130%, 620px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(#6f8dff, #c58bff, #ff7a90, #f6b93b, #33d391, #6f8dff); filter: blur(48px); opacity: .34; animation: spinA 2.8s linear infinite; }
+@keyframes spinA { to { rotate: 360deg; } }
+.draw-title { position: relative; font-weight: 800; font-size: .8rem; letter-spacing: .24em; text-transform: uppercase; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(90deg, var(--muted) 20%, var(--text) 50%, var(--muted) 80%); background-size: 240% 100%; animation: shimmer 1.2s linear infinite; }
+@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.draw-skip { position: relative; margin-top: auto; font-size: .72rem; color: var(--muted); opacity: .7; }
+/* the cards: copies of the list rows (they borrow the .order row styling), moved around by script */
+.scr .chips { position: absolute; inset: 0; margin: 0; padding: 0; display: block; list-style: none; }
+.scr .chips li { position: absolute; left: 0; top: 0; margin: 0; width: var(--cw); transform-origin: 50% 50%; will-change: transform; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.scr .chips li .x, .scr .chips li .num { display: none; }
+.scr .chips li.numbered .num { display: grid; animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+.confetti { position: fixed; width: 9px; height: 15px; border-radius: 2px; pointer-events: none; z-index: 60; will-change: transform; }
 .x { flex: none; border: 0; background: none; color: var(--muted); width: 28px; height: 28px; border-radius: 8px; font-size: .95rem; }
 .x:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
 
@@ -579,9 +593,18 @@ function tone(freq, start, dur, vol = .08, type = 'sine') {
   g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
   o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .03);
 }
+function sweep(f0, f1, dur, vol = .05, type = 'sawtooth') {   // a rising "whoosh"
+  const c = ensureAudio(); if (!c) return;
+  const t0 = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .03);
+}
 const SOUNDS = {
-  tick(p = 0) { tone(900 + p * 90, 0, .03, .025, 'square'); },                          // the reels ticking over (the pitch climbs)
-  lock(p = 0) { tone(180, 0, .08, .12); tone(700 + p * 40, .02, .12, .06, 'triangle'); },   // a row stops on its name
+  tick(p = 0) { tone(900 + p * 90, 0, .03, .025, 'square'); },                          // the cards flutter (the pitch varies)
+  whoosh() { sweep(160, 1300, .4, .045); },                                            // the names fly into the deck
+  lock() { tone(110, 0, .3, .18); tone(523, .04, .4, .08); tone(659, .12, .45, .08); tone(784, .2, .5, .08); tone(1047, .29, .9, .07); },   // the deal is done
+  deal(i = 0) { tone(600 + i * 55, 0, .07, .03, 'triangle'); },                        // one soft pip per card dealt
   chime() { tone(660, 0, .35, .09); tone(990, .13, .55, .08); },
   warn() { tone(880, 0, .25, .09); },
   timesUp() { tone(440, 0, .45, .12, 'triangle'); tone(330, .38, .8, .12, 'triangle'); }
@@ -844,11 +867,39 @@ function render() {
 /* =====================================================================
    The huddle: randomize the order, then each turn starts automatically
    ===================================================================== */
-// Randomize. The real order is decided and saved first; everything after that is show, and it shows EVERY name being mixed:
-// each row turns into a little slot reel that starts on whoever is in that row now and rolls through everyone (blurred while
-// it is fast, decelerating), and the rows stop one at a time from the top, each landing on its new name with a click and its
-// number popping in. Nothing flies around: the tiles stay put and the names spin inside them. Then the real ordered list takes
-// over and glides into its place. Clicking skips it, and a safety timer makes sure the UI can never get stuck.
+// Confetti: paper pieces thrown up from a point, then falling with air drag, gravity and a flutter. They live on the page
+// itself (not inside the stage), so they keep falling after the shuffle screen is gone.
+function confetti(cx, cy, count = 90) {
+  if (reduced()) return;
+  const colors = ['#6f8dff', '#33d391', '#f6b93b', '#ff7a90', '#c58bff', '#ffd66b', '#5ad1ff'];
+  for (let k = 0; k < count; k++) {
+    const el = doc.createElement('i');
+    el.className = 'confetti';
+    el.style.cssText = `left:${cx}px;top:${cy}px;background:${colors[k % colors.length]};${k % 3 === 0 ? 'border-radius:50%;width:10px;height:10px;' : ''}`;
+    doc.body.appendChild(el);
+    const ang = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.15, sp = 420 + Math.random() * 560;
+    const vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp, g = 900 + Math.random() * 300, drag = 1.8 + Math.random() * .8;
+    const dur = 1700 + Math.random() * 1100, spin = (Math.random() - .5) * 1400, flip = 360 + Math.random() * 720;
+    const frames = [];
+    for (let s = 0; s <= 12; s++) {
+      const u = s / 12, t = u * dur / 1000, k1 = (1 - Math.exp(-drag * t)) / drag;
+      frames.push({
+        transform: `translate(${(vx * k1).toFixed(1)}px, ${((vy - g / drag) * k1 + (g / drag) * t).toFixed(1)}px) rotate(${(spin * u).toFixed(0)}deg) rotateX(${(flip * u).toFixed(0)}deg)`,
+        opacity: u > .75 ? (1 - u) / .25 : 1
+      });
+    }
+    const a = el.animate(frames, { duration: dur, easing: 'linear', fill: 'forwards' });
+    a.onfinish = () => el.remove();
+    setTimeout(() => el.remove(), dur + 500);                       // a timer too, in case animation events are held back
+  }
+}
+
+// Randomize: a card shuffle. The real order is decided and saved first; everything after that is show.
+//   1. every name tile flies off its row into a deck in the middle of a frosted screen laid over the stage;
+//   2. the deck is cut in two and the halves are riffled together, twice (the second riffle leaves the deck in the real order);
+//   3. the cards are dealt from the top of the deck, one at a time, into the numbered list; each row comes alive as its card lands;
+//   4. confetti from the middle of the stage.
+// Nobody is singled out. Clicking skips it, and a safety timer makes sure the UI can never get stuck.
 function randomize() {
   const h = state.huddle;
   if (!h || h.current || ui.busy) return;
@@ -857,59 +908,113 @@ function randomize() {
   ensureAudio();
   h.queue = ids; h.ordered = true; saveSession();
   const w = curWin(), stage = $('#stage'), ul = $('#orderList');
-  const rows = ul ? Array.from(ul.children).slice(0, ids.length) : [];
-  if (ids.length < 2 || reduced() || !stage || rows.length < 2 || rows.some(li => !li.querySelector('.avatar'))) { sound('chime'); render(); return; }
+  const rows = ul ? Array.from(ul.children).filter(li => person(li.dataset.id)) : [];
+  if (ids.length < 2 || reduced() || !stage || rows.length !== ids.length) { sound('chime'); render(); return; }
   ui.busy = true;
 
-  const N = rows.length, L = 12;                                      // L: names in each row's reel (it ends on the last one)
-  const START = 1000, GAP = clamp(1800 / N, 40, 150);                 // the first row stops after START ms, the others follow GAP apart
-  const stops = rows.map((_, i) => START + i * GAP + Math.random() * 40), last = Math.max(...stops);
-  const was = rows.map(li => li.dataset.id);
-  const ri = id => { const p = person(id); return `<div class="ri">${avatar(p, 's')}<span class="oname">${esc(p.name)}</span></div>`; };
-  const h2 = stage.querySelector('h2');
-  if (h2) h2.textContent = 'Shuffling…';
-  stage.classList.add('shuffling');
-  rows.forEach((li, i) => {
-    const ah = Math.round(li.querySelector('.avatar').getBoundingClientRect().height) || 36;
-    const items = [was[i]];                                           // it starts on the name that is in this row now...
-    for (let k = 1; k < L - 1; k++) { let id, n = 0; do { id = ids[randInt(ids.length)]; } while (id === items[k - 1] && n++ < 8); items.push(id); }
-    items.push(ids[i]);                                               // ...and ends on the new one
-    li.innerHTML = `<span class="num q">?</span><div class="rwin rolling" style="height:${ah}px;--ah:${ah}px"><div class="rtrk">${items.map(ri).join('')}</div></div>`;
-    const trk = li.querySelector('.rtrk'), D = stops[i];
-    trk.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-(L - 1) * ah}px)` }], { duration: D, easing: 'cubic-bezier(.2, .9, .25, 1)', fill: 'forwards' });
-    trk.animate([{ filter: 'blur(2.5px)' }, { filter: 'blur(2.5px)', offset: .5 }, { filter: 'blur(0px)' }], { duration: D, fill: 'forwards' });
+  const N = ids.length;
+  const sb = stage.getBoundingClientRect(), r0 = rows[0].getBoundingClientRect();
+  const W = sb.width, H = sb.height, w0 = r0.width, h0 = r0.height;
+  const startIds = rows.map(li => li.dataset.id);
+  const scr = doc.createElement('div');
+  scr.className = 'scr';
+  scr.style.cssText = `left:${sb.left}px;top:${sb.top}px;width:${W}px;height:${H}px;border-radius:${getComputedStyle(stage).borderRadius};--cw:${w0}px`;
+  scr.innerHTML = `<div class="scr-bg"><div class="aurora"></div><div class="draw-title">Shuffling the order</div><div class="draw-skip">Click to skip</div></div>
+    <ul class="order chips">${startIds.map(id => { const k = ids.indexOf(id); return orderRow(person(id), k + 1, k); }).join('')}</ul>`;
+  doc.body.appendChild(scr);
+  ul.classList.add('dealing');                                       // the real rows stay hidden until their card lands
+
+  // The deck and its timeline. Pile position p is how deep in the stack a card is (0 = bottom).
+  const s0 = clamp(.52 - N * .004, .3, .5), cx = W / 2, cy = H * .46, half = Math.min(80, W * .2), dep = Math.min(1.3, 70 / N);
+  const gStep = Math.min(14, 220 / N), gFlight = 380, rStep = Math.min(26, 420 / N), rFlight = 190, split = 240;
+  const tGend = (N - 1) * gStep + gFlight;
+  const tR1 = tGend + 60, tM1 = tR1 + split + 40, tE1 = tM1 + (N - 1) * rStep + rFlight;     // riffle 1: cut, slide apart, merge
+  const tR2 = tE1 + 80, tM2 = tR2 + split + 40, tE2 = tM2 + (N - 1) * rStep + rFlight;      // riffle 2
+  const TG = tE2 + 280;
+  const jit = a => (Math.random() - .5) * a;
+  const pose = (x, y, s, r) => `translate(${(x - w0 / 2).toFixed(1)}px, ${(y - h0 / 2).toFixed(1)}px) scale(${s}) rotate(${r.toFixed(1)}deg)`;
+  const pile = p => pose(cx + jit(5), cy - p * dep, s0, jit(5));
+  const a = Math.floor(N / 2);
+  // Riffle 1 is a proper one: the two halves interleave at random. m1[card] = where each card ends up in the stack.
+  const flags = shuffle([...Array(a).fill(0), ...Array(N - a).fill(1)]);
+  let pa = 0, pb = a;
+  const m1 = new Array(N);
+  flags.forEach((f, m) => { m1[f ? pb++ : pa++] = m; });
+  // Riffle 2 drops the cards in the real order (the top card is the first person), each from whichever half it is in.
+  const chips = Array.from(scr.querySelectorAll('.chips li'));
+  const P = chips.map((el, i) => {
+    const id = startIds[i], k = ids.indexOf(id), m2 = N - 1 - k, r = rows[i].getBoundingClientRect();
+    const sx = clamp(r.left - sb.left + r.width / 2, 0, W), sy = clamp(r.top - sb.top + r.height / 2, 0, H);
+    const kf = [];
+    const add = (t, transform, z, easing = 'linear') => kf.push({ t: Math.max(t, kf.length ? kf[kf.length - 1].t : 0), transform, z, easing });
+    const row = pose(sx, sy, 1, 0), p1 = pile(i);
+    add(0, row, i + 1);
+    add(i * gStep, row, i + 1, 'cubic-bezier(.25, .9, .3, 1)');                 // fly into the deck
+    add(i * gStep + gFlight, p1, i + 1);
+    // one riffle: cut (halves by stack position), slide apart, drop back one at a time in the new order, with a little lift
+    const riffle = (t0, tM, from, to, pFrom, pTo) => {
+      const side = from < a ? -1 : 1, inHalf = from < a ? from : from - a;
+      const sp = pose(cx + side * half, cy - inHalf * dep, s0, side * 5), pTop = pile(to);
+      const d0 = tM + to * rStep;
+      add(t0, pFrom, from + 1, 'ease-in-out');
+      add(t0 + split, sp, inHalf + 1);
+      add(d0, sp, inHalf + 1, 'ease-out');
+      add(d0 + rFlight * .45, pose(cx + side * half * .45, cy - to * dep - 26 - Math.random() * 10, s0, side * 2), to + 1, 'ease-in');
+      add(d0 + rFlight, pTo, to + 1);
+    };
+    const p2 = pile(m1[i]), p3 = pile(m2);
+    riffle(tR1, tM1, i, m1[i], p1, p2);
+    riffle(tR2, tM2, m1[i], m2, p2, p3);
+    add(TG, p3, m2 + 1);
+    chips[i].style.transform = row;
+    el.animate(kf.map(f => ({ offset: Math.min(1, f.t / TG), transform: f.transform, zIndex: f.z, easing: f.easing })), { duration: TG, fill: 'forwards' });
+    return { el, k, end: p3, m2 };
   });
 
-  let done = false;
-  const lock = i => {                                                 // this row's reel has stopped on its new name
-    if (done) return;
-    const li = rows[i], num = li.querySelector('.num');
-    li.querySelector('.rwin').classList.remove('rolling');
-    num.classList.remove('q'); num.textContent = i + 1;
-    li.classList.add('locked');
-    sound('lock', Math.min(i, 12));
-  };
-  rows.forEach((li, i) => w.setTimeout(() => lock(i), stops[i]));
-  for (let t = 0, p = 0; t < last; p++) {                             // ticks that slow down as the rows come to rest
-    const at = t, pitch = Math.min(14, p);
-    w.setTimeout(() => { if (!done) sound('tick', pitch); }, at);
-    t += 55 + 190 * Math.pow(t / last, 2);
-  }
-  const settle = () => {                                              // every row has stopped: the real list takes over and glides into place
+  let done = false, rendered = false;
+  const finish = () => {
     if (done) return;
     done = true;
-    const before = rows.map(li => li.getBoundingClientRect());
-    render();
-    Array.from($('#orderList').children).forEach((li, i) => {
-      const dy = before[i] ? before[i].top - li.getBoundingClientRect().top : 0;
-      if (Math.abs(dy) > 1) li.animate([{ transform: `translateY(${dy.toFixed(1)}px)` }, { transform: 'none' }], { duration: 450, delay: i * 18, easing: 'cubic-bezier(.2, .85, .25, 1.05)' });
-    });
-    sound('chime'); ui.busy = false;
+    if (!rendered) { rendered = true; render(); }                    // skipped (or stuck): just show the finished list
+    else { const l = $('#orderList'); if (l) l.classList.remove('dealing'); }
+    scr.remove(); ui.busy = false;
   };
-  const skip = () => { if (!done) { done = true; render(); ui.busy = false; } };
-  w.setTimeout(settle, last + 500);
-  stage.addEventListener('click', skip);
-  setTimeout(skip, 8000);   // safety net on the main window (the pop-out may close, or timers may be held back)
+  const deal = () => {                                               // from the top of the deck into the list, one card at a time
+    if (done) return;
+    rendered = true; render();
+    const list = $('#orderList'); list.classList.add('dealing');
+    scr.classList.add('go');
+    scr.querySelector('.scr-bg').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'forwards' });
+    const rowsNew = Array.from(list.children), box = list.getBoundingClientRect(), cr = scr.getBoundingClientRect();
+    const gap = Math.min(70, 900 / N);
+    let last = 0;
+    P.forEach(p => {
+      const row = rowsNew[p.k];
+      if (!row) { p.el.remove(); return; }
+      const rr = row.getBoundingClientRect();
+      const out = rr.top < box.top - 1 || rr.bottom > box.bottom + 1;   // a row scrolled out of view: its card lands at the edge and fades
+      const top = out ? clamp(rr.top, box.top, Math.max(box.top, box.bottom - rr.height)) : rr.top;
+      const delay = p.k * gap;
+      last = Math.max(last, delay + 620);
+      p.el.classList.add('numbered');
+      const anim = p.el.animate([{ transform: p.end, opacity: 1 },
+        { transform: `translate(${(rr.left - cr.left).toFixed(1)}px, ${(top - cr.top).toFixed(1)}px) scale(1) rotate(0deg)`, opacity: out ? 0 : 1 }],
+        { duration: 620, delay, easing: 'cubic-bezier(.2, .85, .25, 1.1)', fill: 'both' });
+      const land = () => { if (!row.classList.contains('in')) { row.classList.add('in'); p.el.remove(); } };   // the card arrives: its row comes alive
+      anim.onfinish = land;
+      w.setTimeout(land, delay + 660);                                // a timer too, in case animation events are held back
+      if (p.k < 12) w.setTimeout(() => sound('deal', p.k), delay + 200);
+    });
+    w.setTimeout(() => { if (!done) { sound('lock'); confetti(sb.left + W / 2, sb.top + Math.min(H * .35, 260)); } }, last);
+    w.setTimeout(finish, last + 150);
+  };
+
+  sound('whoosh');
+  chips.forEach((_, i) => { if (i % 2 === 0) w.setTimeout(() => { if (!done) sound('tick', 2 + (i % 5)); }, i * gStep + gFlight); });
+  [tM1, tM2].forEach(tM => { for (let m = 0; m < N; m++) w.setTimeout(() => { if (!done) sound('tick', 3 + (m % 3) * 3); }, tM + m * rStep + rFlight); });   // the riffle's flutter
+  w.setTimeout(deal, TG + 40);
+  scr.addEventListener('click', finish);
+  setTimeout(finish, 14000);   // safety net on the main window (the pop-out may close, or timers may be held back)
 }
 
 function startNext() {

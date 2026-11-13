@@ -20,9 +20,10 @@ Everything runs in the browser, and nothing is ever uploaded.
 3. Untick **Here today** for anyone who is out.
 4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
    "Beside Planner" below for how that works in each browser).
-5. Press **Randomize order**. Every row turns into a little slot reel: all the names roll through every row
-   at once (blurring past, ticking), then the rows stop one at a time from the top, each landing on its new name
-   with a click and its number popping in (click anywhere to skip the show). Not happy with it?
+5. Press **Randomize order**. It is a card shuffle: all the name tiles fly into a deck, the deck is cut and
+   riffled together twice (with a whoosh and a flutter of ticks), and then the cards are dealt one by one into
+   the numbered list, each row coming alive as its card lands. Confetti at the end. Nobody is singled out
+   (click anywhere to skip the show). Not happy with it?
    Press **Randomize again**. Then press **Start** (it says who goes first).
 6. Each person's countdown runs. Press **Done** when they finish and the next person starts automatically
    (the button names who is next). **Pause** stops the clock. The **Up next** list shows everyone
@@ -163,17 +164,21 @@ loosened deliberately, adding only
 
 `h.ordered` is false until **Randomize order** is pressed (queue is in list order), then true. `randomize()`
 decides and saves the order first and only then plays the show, with a safety timer (6.5 s) so the UI can
-never get stuck. The show: every
-row of the list is rebuilt as a reel (`.rwin` > `.rtrk`, a column of `L` names that starts on whoever is in that
-row now and ends on its new name) and its track is rolled with the Web Animations API (a decelerating curve, plus a
-blur that clears as it slows). Each row's stop time is `START + i * GAP` (plus a little jitter); at that moment
-`lock()` removes the reel's fade mask, swaps the "?" badge for the number (with a pop) and flashes the row. A ticker
-that slows down and a click per row make the sound. When the last row has stopped, `settle()` calls `render()`
-(the real ordered list) and glides each real row from where its reel was (FLIP), because the ordered screen has
-slightly different buttons above the list. Nothing flies around and there is deliberately no highlight on the first
-person. Clicking the stage skips straight to the finished list, and a safety timer (8 s) guarantees the UI can
-never get stuck; the lock-ins are driven by timers, so they still happen if the browser holds animation events
-back. In a narrow window, sizes in the
+never get stuck. The show: a frosted `.scr` screen
+is laid exactly over the stage (it lives on the page body, so it survives the re-render) holding a copy of every
+row as a card (`.chips`, which borrow the `.order li` styling, while the real rows are hidden by `.order.dealing`).
+Each card has one Web Animations timeline built from keyframes: it flies into the deck (`gStep` apart), then two
+riffles. A riffle cuts the deck in half by stack position, slides the halves apart, and drops the cards back one at a
+time (a little lift on the way, `rStep` apart) in a new stacking order; `z-index` is animated too, so the stack
+really changes. Riffle 1 is a true random interleave of the two halves; riffle 2 drops the cards in the real new
+order (top of the deck = first person), each from whichever half it sits in. `deal()` then renders the real ordered
+list (rows hidden) and flies each card from the top of the deck to its row; when it lands, the row gets the class
+`in` (sheen, number pop) and the card is removed. Rows scrolled out of view (a long list in a narrow window) get their
+card landing at the list's edge, fading. The finish is a chord (`lock` sound) and `confetti()` from the middle of the
+stage (the pieces live on the page body so they keep falling). Sounds: `whoosh`, `tick` (flutter), `deal` pips. There
+is deliberately no highlight on the first person. Clicking the screen skips straight to the finished list, a safety
+timer (14 s) guarantees the UI can never get stuck, and the deal / landings are also driven by timers in case the
+browser holds animation events back. In a narrow window, sizes in the
 running view use `clamp()` with `vh` units and the running card grows to take leftover height, so a tall strip
 is filled instead of leaving empty space at the bottom. The running view never scrolls as a whole
 (`#app.is-huddle` is the window height with `overflow: hidden`): the running card keeps its height and the
