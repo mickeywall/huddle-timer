@@ -114,8 +114,8 @@ summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .opts label.inline { flex-wrap: wrap; }
 .opts input[type=checkbox] { flex: none; }
 .backup { border-top: 1px solid var(--line); padding: 16px 0; display: grid; gap: 10px; }
-.backup .btns { display: flex; gap: 10px; flex-wrap: wrap; }
-.start-bar { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: center; }
+.backup .btns { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btns .go { margin-left: auto; padding: 12px 24px; font-size: 1.05rem; border-radius: 14px; }
 .foot { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 26px; }
 
 /* ---------- huddle ---------- */
@@ -285,6 +285,7 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .here-txt { display: none; }
   .person .name-input { padding: 3px 8px; }
   .summary .actions .btn { flex: 1 1 100%; }
+  .backup .btns .go { flex: 1 1 100%; margin-left: 0; }   /* narrow window: Start huddle gets its own full-width row under the backup buttons */
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -611,9 +612,12 @@ function setupHTML() {
     </details>
     <div class="backup">
       <p class="muted">Your list and photos are saved in this browser on this computer. Save a backup file to move them to another computer, or in case the browser's data gets cleared.</p>
-      <div class="btns"><button class="btn" data-action="saveBackup">Save backup file</button><button class="btn" data-action="restoreBackup">Restore from backup</button></div>
+      <div class="btns">
+        <button class="btn" data-action="saveBackup">Save backup file</button>
+        <button class="btn" data-action="restoreBackup">Restore from backup</button>
+        <button id="startBtn" class="btn primary go" data-action="startHuddle" ${people.some(p => p.present) ? '' : 'disabled'}>${startLabel()}</button>
+      </div>
     </div>
-    <div class="start-bar"><button id="startBtn" class="btn primary big" data-action="startHuddle" ${people.some(p => p.present) ? '' : 'disabled'}>${startLabel()}</button></div>
   </main>`;
 }
 
