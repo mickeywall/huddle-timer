@@ -167,6 +167,7 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
    together twice, and then the cards are dealt one by one into the numbered list, each row coming alive as its card lands.
    Confetti at the end. Nobody is singled out. Click to skip. */
 .order.dealing li { visibility: hidden; }
+.order.dealing li.in { visibility: visible; }                               /* a card has landed on this row: it stays */
 .order li.in { position: relative; overflow: hidden; }
 .order li.in::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .3) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .8s ease-out both; }
 .order li.in .num { animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
