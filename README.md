@@ -66,8 +66,9 @@ Setup uses a normal, centered window. When you press **Start huddle** the app mo
 (about 360 pixels wide) on the right side of your screen, and everything (the clock, the buttons, the
 Up next list) fits in that strip. How that happens depends on how you opened it:
 
-- **Installed app (Chrome or Edge):** the app window itself resizes and moves to the right edge, then
-  returns to a centered window for Setup and the summary.
+- **Installed app (Chrome or Edge):** the app window itself resizes and snaps to the right edge and stays
+  there (it snaps back if you drag it) until you click Pop out; Setup and the summary use a normal centered
+  window.
 - **Normal browser tab (Chrome or Edge):** the timer opens in a small floating window that stays above
   your other windows, and the main tab shows "Bring it back here". The browser decides exactly where that
   window appears, so drag it to the right edge once; it usually remembers.
@@ -83,13 +84,20 @@ You can turn the automatic move off under Setup > More options.
    Screen Recording (called Screen & System Audio Recording on newer macOS versions).
 4. Randomize, start, and as each person comes up, everyone looks at their Planner column.
 
-**Pop out / Dock back (the small icon at the top).**
+**Docked or Pop out (the small icon at the top).**
 
-- **Installed app:** *Pop out* turns the same window into a small floating card (about 520 px wide, in the
-  top-right), and *Dock back* puts it back exactly where it was. It is one window the whole time: nothing
-  opens, nothing flickers, nothing needs a click. The card remembers where you last put it. (A web page
-  can't keep its own window above other windows, so the card can be covered by another window if you click
-  one. Put Planner and the card side by side, or use a normal browser tab for the always-on-top version.)
+- **Docked (installed app):** during a huddle the window sits snapped to the right edge of the screen, full
+  height, as a strip. It is locked there: if you drag or resize it, it snaps straight back as soon as you
+  let go. (A web page can't truly freeze its own window, so letting go is when it moves back. It never fights
+  you while you drag, so nothing flickers.)
+- **Pop out:** unlocks the window and turns it into a small movable card (about 520 px wide, where you last
+  left it, or the top-right). Move and resize it however you like.
+- **Snap to side** (the same icon, while popped out): remembers the card, snaps the window to the right edge
+  of whichever screen it is on, and locks it again. To move the strip to another monitor, press Pop out, drag
+  it there, then press Snap to side.
+- Setup and the summary use a normal centered window and are never locked.
+- It is one window the whole time. The window can be covered by another window like any other, and it can't be
+  made much narrower than about 500 px (a browser limit).
 - **Normal browser tab (Chrome or Edge):** *Pop out* opens a small floating window that stays above your
   other windows (this is the only way a browser tab can become a small window), and the tab shows "Bring it
   back here". Dock back, or close the floating window, to return.
@@ -148,13 +156,15 @@ older "spin" version (a person in a `landed` phase) are converted on load.
 
 - Installed app (`display-mode: standalone` etc.): `window.resizeTo` / `moveTo` to the strip, and it checks
   `outerWidth` afterwards. If the browser ignored it, it falls back to the pop-out.
-- **Pop out / Dock back, installed app:** `floatWindow()` saves the window's bounds in `floatHome` and resizes /
-  moves the same window into a floating card (the last card bounds from `localStorage` `huddle-timer/float`, or
-  520 px wide in the top-right); `dockWindow()` stores the card's bounds and restores `floatHome`. One resize
-  and one move each, no second window. This replaced an earlier design that opened a Document
-  Picture-in-Picture window and tried to hide the app window underneath it: Chrome won't let a page set the
-  pop-out's position or reliably size it, and a window can't hang off-screen or shrink below its minimum
-  (about 500 px wide), so it needed clicks, retried constantly and flickered. Don't go back to that.
+- **Dock / free modes, installed app (`winMode`):** `snapToSide()` places the window on the right edge of the
+  current screen and records whatever size and position the browser settled on as `dockBase` (windows can't
+  be narrower than ~500 px, so the result differs from the 360 px requested). `enforceDock()` runs every 150 ms
+  while docked: if the window differs from `dockBase`, it waits until two polls in a row see the same
+  rectangle (the person stopped dragging), then calls `resizeTo` / `moveTo` once to put it back, giving up after
+  5 tries (e.g. maximized). `popOutFree()` stops the lock and shows the card (`huddle-timer/float` in
+  `localStorage` remembers its bounds); `dockSide()` saves the card and docks again. This replaced two earlier
+  designs that used a Document Picture-in-Picture window and tried to hide the app window under it (needed
+  clicks, retried constantly, flickered): don't go back to that.
 - **Normal browser tab:** the pop-out uses the Document Picture-in-Picture API (Chrome / Edge 116+, desktop; it
   needs a click as its user gesture; also used as the fallback when an installed window can't be resized). The
   whole UI (`#shell`) is moved into the floating window and moved back on close; app state stays in the main
