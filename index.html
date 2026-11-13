@@ -132,12 +132,13 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
   .person .td { display: none; }                  /* two columns of names are narrow: "Here" is enough next to the tick */
 }
 @media (min-width: 880px) and (min-height: 520px) {
-  .app.fit { padding-top: 10px; padding-bottom: 6px; }
+  .app.fit { --z: 1.15; zoom: var(--z); padding-top: 10px; padding-bottom: 6px; }   /* the whole Setup screen at 115% */
   .app.fit .top { padding: 0 0 10px; min-height: 0; }
   .app.fit .setup { padding: 20px 24px 18px; }
   .app.fit .foot { margin-top: 10px; }
-  .app.fit .people { max-height: calc(100vh - 380px); min-height: 110px; overflow-y: auto; align-content: start; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .app.fit .people { max-height: calc(100vh / var(--z) - 392px); min-height: 110px; overflow-y: auto; align-content: start; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 }
+@media (min-width: 880px) and (min-height: 520px) and (max-height: 689px) { .app.fit { --z: 1; } }   /* a short window: back to 100% so it all still fits */
 
 /* ---------- huddle ---------- */
 .huddle { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
@@ -1261,7 +1262,7 @@ listen('keydown', e => {
 /* =====================================================================
    Windows: centered setup -> narrow side strip -> back again.
    - Installed app window (Chrome/Edge let an installed app resize and move itself). Always ONE window, in one of:
-       setup: a 1100 x 700 centered window (the app opens like this); summary: a smaller centered one.
+       setup: a 1200 x 760 centered window (the app opens like this); summary: a smaller centered one.
        'dock': during a huddle, snapped to the right edge of the screen as a strip. If you drag or resize it, it
                snaps straight back as soon as you let go (a page can't truly freeze its own window).
        'card': after "Pop out": a small square window of FIXED SIZE that you can move. If you resize it, it
@@ -1395,9 +1396,9 @@ function popInPip() {
 function popOut() { if (isInstalled()) popOutCard(); else popOutPip(); }
 function popIn() { if (isInstalled() && !pip) dockSide(); else popInPip(); }
 
-// A normal window, centered. The app's launch and Setup (big = true) use a comfortable 1100 x 700, which fits the whole
+// A normal window, centered. The app's launch and Setup (big = true) use a comfortable 1200 x 760, which fits the whole
 // Setup screen for a typical team without scrolling (smaller if the screen is); the summary gets a smaller window.
-const SETUP_W = 1100, SETUP_H = 700;
+const SETUP_W = 1200, SETUP_H = 760;
 function centerWindow(big = true) {
   const b = screenBox();
   const w = big ? Math.min(SETUP_W, b.w) : Math.min(980, b.w - 80), h = big ? Math.min(SETUP_H, b.h) : Math.min(860, b.h - 80);

@@ -66,7 +66,7 @@ list looks empty in the installed app, add the team once there, or use **Restore
 
 ## Beside Planner in a Teams meeting
 
-Setup uses a comfortable centered window (1100 x 700). When you press **Start huddle** the app moves into a narrow strip
+Setup uses a comfortable centered window (1200 x 760) at 115% size. When you press **Start huddle** the app moves into a narrow strip
 (about 360 pixels wide) on the right side of your screen, and everything (the clock, the buttons, the
 Up next list) fits in that strip. How that happens depends on how you opened it:
 
@@ -95,7 +95,7 @@ You can turn the automatic move off under Setup > More options.
   **Done** and **Not here** lists shrink first). As people finish and drop off **Up next**, it stops
   scrolling once everything fits. In a very short window the two totals (huddle time, time per person) are
   hidden so the lists keep the room.
-- **Opens centered (installed app):** the installed app opens as a centered 1100 x 700 window (smaller if
+- **Opens centered (installed app):** the installed app opens as a centered 1200 x 760 window (smaller if
   your screen is) for Setup. Setup is always that window; the summary after a huddle is a slightly smaller
   centered one.
 - **Docked (the default during a huddle):** when you press Start huddle, the window resizes and snaps to the
@@ -184,8 +184,9 @@ columns of at least 260 px, so two) on the left, two settings cards (`.s-cfg`) o
 with the backup buttons, a short note about where the list is saved, and Start huddle. The panel is at most
 980 px wide and only as tall as its contents; it is not stretched to the window (a huddle is a handful of
 people). `render()` puts a `fit` class on `.app` for Setup; when the window is at least 520 px tall,
-`.people` gets `max-height: calc(100vh - 380px)` and scrolls inside its own box, so the page itself never
-scrolls. Narrower windows stack everything and the page scrolls normally.
+`.app.fit` is scaled up with CSS `zoom: var(--z)` (`--z: 1.15`, back to 1 when the window is under 690 px
+tall), and `.people` gets `max-height: calc(100vh / var(--z) - 392px)` and scrolls inside its own box, so the
+page itself never scrolls. Narrower windows stack everything and the page scrolls normally.
 
 ### Window handling (`enterStrip` / `leaveStrip`)
 
@@ -202,7 +203,7 @@ scrolls. Narrower windows stack everything and the page scrolls normally.
   left or top edge also shifts the window). Moves fire no event, so those are caught by the watcher. `popOutCard()`
   makes the 520 x 520 card (position from `huddle-timer/float` in `localStorage`, else top-right) and adds the
   `is-card` class for the condensed layout; `dockSide()` saves the card's position and docks again. The app also
-  calls `centerWindow(big)` at launch and for Setup (`SETUP_W` x `SETUP_H` = 1100 x 700, or the screen's work
+  calls `centerWindow(big)` at launch and for Setup (`SETUP_W` x `SETUP_H` = 1200 x 760, or the screen's work
   area if that is smaller) and for the summary (at most 980 x 860). This replaced earlier designs that used a Document
   Picture-in-Picture window and tried to hide the app window under it (needed clicks, retried constantly,
   flickered): don't go back to that.
