@@ -88,15 +88,19 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .add { display: flex; gap: 10px; margin-bottom: 16px; }
 .add input { flex: 1; }
 .people { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 8px; }
-.person { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; padding: 8px 12px 8px 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel2); }
+/* one slim line per person: photo | name | here-today tick | remove */
+.person { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel2); }
+.person .avatar { --s: 34px; }
 .person.away .avatar, .person.away .name-input { opacity: .5; }
-.name-input { background: transparent; border-color: transparent; font-weight: 600; font-size: 1.05rem; width: 100%; }
-.name-input:hover, .name-input:focus { border-color: var(--line); background: var(--panel); }
+.person .name-input { background: transparent; border: 1px solid transparent; border-radius: 10px; font-weight: 600; font-size: 1rem; width: 100%; padding: 4px 10px; }
+.person .name-input:hover, .person .name-input:focus { border-color: var(--line); background: var(--panel); }
+.avwrap { position: relative; display: inline-block; line-height: 0; }
 .avatar-btn { border: 0; background: none; padding: 0; border-radius: 50%; position: relative; }
-.avatar-btn .cam { position: absolute; right: -3px; bottom: -3px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 11px; border: 2px solid var(--panel2); }
-.here { display: flex; align-items: center; gap: 8px; font-size: .92rem; color: var(--muted); white-space: nowrap; cursor: pointer; }
-.row-actions { display: flex; align-items: center; gap: 2px; }
-.icon-btn { border: 0; background: none; color: var(--muted); width: 34px; height: 34px; border-radius: 10px; font-size: 1.05rem; }
+.avatar-btn .cam { position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 9px; line-height: 1; border: 2px solid var(--panel2); }
+.avwrap .rm { position: absolute; top: -5px; right: -5px; width: 17px; height: 17px; padding: 0; border-radius: 50%; border: 2px solid var(--panel2); background: var(--bad); color: #fff; font-size: 8px; line-height: 1; display: grid; place-items: center; }
+.here { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--muted); white-space: nowrap; cursor: pointer; }
+.row-actions { display: flex; align-items: center; }
+.icon-btn { border: 0; background: none; color: var(--muted); width: 30px; height: 30px; border-radius: 9px; font-size: 1rem; }
 .icon-btn:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
 .empty { text-align: center; padding: 26px 10px; border: 2px dashed var(--line); border-radius: 18px; margin-bottom: 22px; color: var(--muted); }
 .empty .btn { margin-top: 12px; }
@@ -146,6 +150,7 @@ summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 
 /* during a turn */
 .who { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 100%; }
+.whotxt { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; max-width: 100%; }
 .who .avatar { border: 6px solid var(--line); transition: border-color .4s; }
 .stage[data-level=ok] .who .avatar { border-color: var(--good); }
 .stage[data-level=warn] .who .avatar { border-color: var(--warn); }
@@ -206,8 +211,6 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 @media (max-width: 600px) {
   .app { padding: 10px 12px 30px; }
   .panel { padding: 18px; }
-  .person { grid-template-columns: auto 1fr auto; }
-  .person .here { grid-column: 2 / 3; }
   .stats { grid-template-columns: 1fr; }
   .res { grid-template-columns: 1fr auto; } .res .badge { grid-column: 1 / -1; }
   .stage { padding: 18px; min-height: 520px; }
@@ -223,7 +226,7 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 
 /* ---------- narrow "strip" window (docked beside Planner): fit everything without scrolling ---------- */
 @media (display-mode: standalone) { .foot { display: none; } }
-@media (max-width: 520px) {
+@media (max-width: 600px) {
   .app { padding: 6px 8px 14px; }
   .foot { display: none; }
   .top { padding: 2px 0 8px; min-height: 0; gap: 8px; }
@@ -237,7 +240,7 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .btn kbd { display: none; }
   .huddle { gap: 10px; }
   .stage { min-height: 0; padding: 14px 12px; gap: 10px; border-radius: 20px; border-width: 2px; }
-  .stage.turn { position: sticky; top: 0; z-index: 5; }
+  .stage.turn { position: sticky; top: 0; z-index: 5; padding: 10px 12px; gap: 6px; align-items: stretch; text-align: left; }
   .prep { gap: 10px; }
   .prep h2 { font-size: 1.25rem; }
   .order { gap: 6px; }
@@ -245,34 +248,42 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .order .num { width: 24px; height: 24px; font-size: .78rem; }
   .order .oname { font-size: .98rem; }
   .order .avatar.s { --s: 34px; }
-  .who { gap: 4px; }
-  .who .avatar { border-width: 4px; }
-  .avatar.xl { --s: clamp(60px, 24cqw, 96px); }
-  .wname { font-size: clamp(22px, 8.5cqw, 32px); }
-  .tag { font-size: .72rem; padding: 2px 12px; }
-  .clock { font-size: clamp(56px, 28cqw, 120px); }
-  .bar { height: 10px; }
-  .actions { gap: 8px; width: 100%; }
-  .actions .btn { flex: 1 1 100%; }
+  /* the running card: photo + name side by side, then the clock, bar and one row of buttons.
+     Sizes follow the window height too (vh), so a short laptop screen still has room for the Up next list. */
+  .who { flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; }
+  .whotxt { align-items: flex-start; gap: 2px; text-align: left; }
+  .who .avatar { border-width: 3px; }
+  .avatar.xl { --s: clamp(40px, min(14cqw, 7vh), 64px); }
+  .wname { font-size: clamp(17px, min(6.2cqw, 3.2vh), 26px); line-height: 1.15; }
+  .tag { font-size: .64rem; padding: 1px 10px; }
+  .clock { font-size: clamp(44px, min(21cqw, 10.5vh), 92px); text-align: center; }
+  .bar { height: 8px; width: 100%; }
+  .actions { flex-wrap: nowrap; gap: 8px; width: 100%; }
+  .actions .btn { flex: 1 1 auto; min-width: 0; padding: 9px 12px; font-size: .95rem; border-radius: 12px; }
+  .actions .btn:first-child { flex: 0 0 auto; }
+  .stage.turn .btn.link { align-self: center; font-size: .76rem; padding: 0 4px; }
   .all-done .emoji { font-size: 3rem; } .all-done h2 { font-size: 1.5rem; }
   .side { gap: 8px; }
   .card { padding: 10px 12px; border-radius: 14px; }
   .card h3 { margin-bottom: 6px; }
-  .meta b { font-size: 1.15rem; }
-  .list { gap: 4px; }
+  .meta { padding: 8px 12px; }
+  .meta b { font-size: 1.05rem; }
+  .list { gap: 2px; }
+  .list li { padding: 2px 4px; gap: 8px; }
+  .list .avatar.xs { --s: 28px; }
+  .lnum { width: 20px; height: 20px; font-size: .68rem; }
+  .x { width: 26px; height: 26px; }
+  /* who is coming matters more than the totals: Up next first, the clock/totals card last */
+  .side .upnext { order: 1; } .side .donecard { order: 2; } .side .nothere { order: 3; } .side .meta { order: 4; }
   .panel { padding: 14px; border-radius: 18px; }
   h1 { font-size: 1.4rem; }
   .sub { margin-bottom: 14px; font-size: .9rem; }
   .add { flex-wrap: wrap; }
   .set-row > strong { min-width: 0; width: 100%; }
-  /* setup, one line per person: avatar | name | here-today tick | remove; "remove photo" drops under the name */
-  .person { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 4px 8px; padding: 6px 8px; }
-  .person .here { grid-column: 3; grid-row: 1; }
+  /* setup rows in a narrow window: the "Here today" words drop out and just the tick stays */
+  .person { gap: 6px; padding: 4px 6px; }
   .here-txt { display: none; }
-  .row-actions { display: contents; }
-  .row-actions .icon-btn { grid-column: 4; grid-row: 1; }
-  .row-actions .link { grid-column: 2 / -1; grid-row: 2; justify-self: start; padding: 0 6px; }
-  .name-input { font-size: 1rem; padding: 8px 10px; }
+  .person .name-input { padding: 3px 8px; }
   .summary .actions .btn { flex: 1 1 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -569,13 +580,10 @@ function setupHTML() {
   const inProgress = state.huddle && !state.huddle.endedAt;
   const rows = people.map(p => `
     <li class="person ${p.present ? '' : 'away'}" data-id="${p.id}">
-      <button class="avatar-btn" data-action="photo" title="Click to add or change the photo (or drop a picture here)" aria-label="Change photo for ${esc(p.name)}">${avatar(p, 's')}<span class="cam" aria-hidden="true">📷</span></button>
+      <span class="avwrap"><button class="avatar-btn" data-action="photo" title="Click to add or change the photo (or drop a picture here)" aria-label="Change photo for ${esc(p.name)}">${avatar(p, 's')}<span class="cam" aria-hidden="true">📷</span></button>${p.photo ? `<button class="rm" data-action="removePhoto" title="Remove the photo" aria-label="Remove photo for ${esc(p.name)}">✕</button>` : ''}</span>
       <input class="name-input" type="text" value="${esc(p.name)}" maxlength="60" data-field="name" aria-label="Name">
       <label class="here" title="Here today"><input type="checkbox" data-field="present" aria-label="Here today" ${p.present ? 'checked' : ''}> <span class="here-txt">Here today</span></label>
-      <span class="row-actions">
-        ${p.photo ? `<button class="btn link" data-action="removePhoto">remove photo</button>` : ''}
-        <button class="icon-btn" data-action="removePerson" aria-label="Remove ${esc(p.name)}" title="Remove from the list">✕</button>
-      </span>
+      <span class="row-actions"><button class="icon-btn" data-action="removePerson" aria-label="Remove ${esc(p.name)}" title="Remove from the list">✕</button></span>
     </li>`).join('');
   return `
   <main class="panel setup">
@@ -645,7 +653,7 @@ function stageHTML(h) {
     + `<button class="btn ${cur.phase === 'paused' ? '' : 'primary '}big flexy" data-action="doneTurn">${next ? `<span class="ellip">Done → ${esc(next.name)}</span>` : 'Done – finish'}<kbd>Enter</kbd></button>`;
   const level = levelOf(h, cur);
   return `<section class="stage turn ${cur.phase === 'paused' ? 'paused' : ''}" id="stage" data-level="${level}">
-    <div class="who">${avatar(p, 'xl')}<div class="wname">${esc(cur.name)}</div><span class="tag" id="tag">${cur.phase === 'paused' ? 'Paused' : TAGS[level]}</span></div>
+    <div class="who">${avatar(p, 'xl')}<div class="whotxt"><div class="wname">${esc(cur.name)}</div><span class="tag" id="tag">${cur.phase === 'paused' ? 'Paused' : TAGS[level]}</span></div></div>
     <div class="clock" id="clock" role="timer" aria-live="off">${fmtClock(h.durationSec * 1000 - elapsedMs(cur))}</div>
     <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
     <div class="actions">${buttons}</div>
@@ -662,9 +670,9 @@ function sideHTML(h) {
   const upNext = pool.map((p, i) => `<li data-id="${p.id}" class="${i === 0 ? 'next' : ''}"><span class="lnum">${i + 1}</span>${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span>${i === 0 ? '<span class="nbadge">Next</span>' : ''}<button class="x" data-action="skipPerson" aria-label="${esc(p.name)} is not here" title="Not here today">✕</button></li>`).join('');
   return `<aside class="side">
     <div class="card meta"><div><span class="lbl">Huddle time</span><b id="huddleClock">0:00</b></div><div><span class="lbl">Per person</span><b>${fmtSecs(h.durationSec)}</b></div></div>
-    ${inTurn ? `<div class="card"><h3>Up next (${pool.length})</h3>${pool.length ? `<ol class="list">${upNext}</ol>` : '<p class="muted">That\'s the last one.</p>'}</div>` : ''}
-    ${h.log.length ? `<div class="card"><h3>Done (${h.log.length})</h3><ul class="list">${done}</ul></div>` : ''}
-    ${h.notHere.length ? `<div class="card"><h3>Not here (${h.notHere.length})</h3><ul class="list">${h.notHere.map(n => `<li data-id="${n.id}"><span class="lname">${esc(n.name)}</span><button class="btn small" data-action="addBack">Add back</button></li>`).join('')}</ul></div>` : ''}
+    ${inTurn ? `<div class="card upnext"><h3>Up next (${pool.length})</h3>${pool.length ? `<ol class="list">${upNext}</ol>` : '<p class="muted">That\'s the last one.</p>'}</div>` : ''}
+    ${h.log.length ? `<div class="card donecard"><h3>Done (${h.log.length})</h3><ul class="list">${done}</ul></div>` : ''}
+    ${h.notHere.length ? `<div class="card nothere"><h3>Not here (${h.notHere.length})</h3><ul class="list">${h.notHere.map(n => `<li data-id="${n.id}"><span class="lname">${esc(n.name)}</span><button class="btn small" data-action="addBack">Add back</button></li>`).join('')}</ul></div>` : ''}
   </aside>`;
 }
 
@@ -1011,7 +1019,7 @@ listen('keydown', e => {
      The whole UI (#shell) is moved into that window and moved back when it closes; app state stays here.
    - Anywhere else (e.g. Safari): nothing moves; the layout simply adapts if you make the window narrow.
    ===================================================================== */
-const STRIP_W = 360, STRIP_MAX = 520;
+const STRIP_W = 360, STRIP_MAX = 600;
 const shell = $('#shell');
 const away = $('#away');
 let pip = null;                                  // the pop-out window while it is open
@@ -1033,7 +1041,11 @@ async function popOut() {
   if (pip || !canPop()) return;
   try {
     const b = screenBox();
-    const w = await window.documentPictureInPicture.requestWindow({ width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
+    // If this window already is the strip, the pop-out takes its exact place (same size, same spot) so only one
+    // window is visible, and Dock back simply reveals this window again, unchanged. Otherwise it goes to the right edge.
+    const home = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight, iw: window.innerWidth, ih: window.innerHeight };
+    const cover = home.w <= STRIP_MAX;
+    const w = await window.documentPictureInPicture.requestWindow(cover ? { width: home.iw, height: home.ih } : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
     pip = w;
     w.document.documentElement.lang = 'en';
     w.document.head.append(document.head.querySelector('style').cloneNode(true));
@@ -1044,7 +1056,10 @@ async function popOut() {
     startTicker();
     w.addEventListener('pagehide', popIn);       // fires when the pop-out window is closed or sent back by the browser
     render();
-    try { w.moveTo(b.x + b.w - STRIP_W - 12, b.y + 48); } catch (e) { /* the browser decides where it goes */ }
+    try {
+      if (cover) { w.resizeTo(home.w, home.h); w.moveTo(home.x, home.y); }
+      else w.moveTo(b.x + b.w - STRIP_W - 12, b.y + 48);
+    } catch (e) { /* the browser decides where it goes */ }
   } catch (e) { pip = null; doc = document; toast("Couldn't open the floating window here."); }
 }
 

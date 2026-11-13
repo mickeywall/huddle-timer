@@ -83,7 +83,9 @@ You can turn the automatic move off under Setup > More options.
 4. Randomize, start, and as each person comes up, everyone looks at their Planner column.
 
 You can also float the timer yourself at any time with the small pop-out icon at the top (Chrome and
-Edge only), and click **Dock back** to return.
+Edge only). If the app window is already a narrow strip, the floating window opens exactly on top of it
+so you only see one window; click **Dock back** (the same icon) and the strip is right where it was.
+If it opens in a different spot, drag it; the strip underneath stays put.
 
 ## For the developer
 
@@ -140,6 +142,11 @@ older "spin" version (a person in a `landed` phase) are converted on load.
   moved back on close; app state stays in the main page. Event listeners are registered through `listen()`
   so they can be replayed on the pop-out's document, and the clock interval and shuffle animation run in
   whichever window currently shows the UI (a hidden main window gets its timers throttled).
+- Pop-out from a strip-sized window (`outerWidth <= STRIP_MAX`): `requestWindow` with the window's inner size,
+  then `resizeTo` / `moveTo` onto the original's `screenX` / `screenY`, so it covers the strip. The original
+  window is never moved or resized, so Dock back needs no restoring. From a bigger window it goes to the
+  right edge at strip width. (Browsers don't let a page minimize or hide its own window, so covering is
+  the closest to "only the pop-out".)
 - Neither available (Safari, Firefox): nothing moves, and a one-time tip is shown.
 - Restoring: Setup / summary dock the pop-out back, or re-center an installed window that is strip-sized.
 
