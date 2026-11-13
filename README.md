@@ -3,7 +3,7 @@
 A simple stand-up (huddle) facilitator. Add your team in a normal window, then start the huddle:
 the app shrinks into a narrow strip on the side of your screen, you press **Randomize order**, and
 everyone can see who is up and who is next. Each person gets a countdown. When time runs out the clock
-turns red and keeps counting into negative numbers so everyone can see who ran over. When you press
+turns yellow for the last 30 seconds and then red, and keeps counting into negative numbers so everyone can see who ran over. When you press
 **Done**, the next person's timer starts straight away.
 
 It is a single file (`index.html`) with no dependencies, no build step and no server.
@@ -60,6 +60,9 @@ and still opens when you have no internet.
 - **Chrome:** open the page, then use the menu **&#8942; > Cast, save, and share > Install page as app**.
 - **Edge:** open the page, then use the menu **... > Apps > Install this site as an app**.
 - **Safari (macOS Sonoma or newer):** open the page, then choose **File > Add to Dock**.
+
+**Getting an update:** an open window keeps running the version it started with. After an update, close the
+app completely (every window) and open it again; it fetches the newest version when you are online.
 
 Some browsers (Safari, for one) keep an installed app's data separate from normal tabs. If your team
 list looks empty in the installed app, add the team once there, or use **Restore from backup**.
@@ -151,7 +154,8 @@ loosened deliberately, adding only
 
 - `manifest.webmanifest` + `icons/` make browsers offer "install" (standalone window, no address bar).
 - `sw.js` is a small service worker: **network first**, cached copy as the fallback, so updates arrive
-  as soon as you're online. It only touches files from the same site. It is not registered for a
+  as soon as you're online. Its network requests use `cache: 'no-cache'` (revalidate): GitHub Pages marks files as
+  fresh for 10 minutes, so without that, reopening the app soon after an update could still show the old version. It only touches files from the same site. It is not registered for a
   `file://` copy. If you change the list of cached files, bump `CACHE` in `sw.js`.
 - Service workers need `https://` or `localhost`, so test installs against the Pages URL or the local server.
 

@@ -115,7 +115,6 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .opts { display: grid; gap: 12px; }
 .opts label { display: flex; align-items: center; gap: 10px; }
 .opts label span { min-width: 0; }
-.opts label.inline { flex-wrap: wrap; }
 .opts input[type=checkbox] { flex: none; }
 /* the bottom bar: backup buttons and a note on the left, Start huddle on the right */
 .setup-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 14px; }
@@ -472,7 +471,8 @@ const avatar = (p, size) => p.photo
    ===================================================================== */
 const KEY = 'huddle-timer/v1';
 const SKEY = 'huddle-timer/session/v1';
-const DEFAULTS = { seconds: 120, warnSec: 30, sound: true, autoStrip: true };
+const DEFAULTS = { seconds: 120, sound: true, autoStrip: true };
+const WARN_SEC = 30;                       // the clock turns yellow for the last 30 seconds (or the last half of a turn shorter than a minute)
 const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 const idOk = v => typeof v === 'string' && /^[\w-]{1,40}$/.test(v);
 
@@ -492,7 +492,6 @@ function cleanData(raw) {
   }
   const s = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
   out.settings.seconds = clamp(toInt(s.seconds, DEFAULTS.seconds), 5, 3600);
-  out.settings.warnSec = clamp(toInt(s.warnSec, DEFAULTS.warnSec), 0, 600);
   out.settings.sound = s.sound !== false;
   out.settings.autoStrip = s.autoStrip !== false;
   return out;
@@ -508,7 +507,6 @@ function sanitizeHuddle(h) {
     beganAt: Number.isFinite(h.beganAt) ? h.beganAt : null,        // when the first person's turn started
     endedAt: Number.isFinite(h.endedAt) ? h.endedAt : null,
     durationSec: clamp(h.durationSec, 5, 3600),
-    warnSec: clamp(num(h.warnSec, 30), 0, 600),
     ordered: h.ordered === true,                                    // has the order been randomized yet?
     queue: arr(h.queue).filter(idOk),
     log: arr(h.log).filter(r => r && idOk(r.id)).map(r => ({ id: r.id, name: str(r.name), allotted: num(r.allotted), used: num(r.used) })),
@@ -647,7 +645,7 @@ function levelOf(h, cur) {
   if (!cur) return 'idle';
   const rem = h.durationSec * 1000 - elapsedMs(cur);
   if (rem <= 0) return 'over';
-  const warn = Math.min(h.warnSec, Math.floor(h.durationSec / 2));
+  const warn = Math.min(WARN_SEC, Math.floor(h.durationSec / 2));
   return warn > 0 && rem <= warn * 1000 ? 'warn' : 'ok';
 }
 const TAGS = { ok: 'Speaking', warn: 'Almost out of time', over: 'Over time' };
@@ -736,7 +734,6 @@ function setupHTML() {
           <div class="opts">
             <label title="Moves the window to a narrow strip on the right side of the screen when you press Start huddle"><input type="checkbox" data-field="autoStrip" ${settings.autoStrip ? 'checked' : ''}><span>Move to a side strip when the huddle starts</span></label>
             <label title="A chime when the next person starts, a beep when time is almost up, and a tone when it runs out"><input type="checkbox" data-field="sound" ${settings.sound ? 'checked' : ''}><span>Play sounds</span></label>
-            <label class="inline"><span>Turn yellow when</span><input type="number" min="0" max="600" value="${settings.warnSec}" data-field="warnSec" aria-label="Warning seconds"><span>seconds are left</span></label>
           </div>
         </section>
       </aside>
@@ -1153,7 +1150,7 @@ const actions = {
     if (state.huddle && !state.huddle.endedAt && !await ask('A huddle is already in progress. Discard it and start a new one?', 'Start new huddle')) return;
     const s = state.data.settings;
     state.huddle = {
-      startedAt: Date.now(), beganAt: null, endedAt: null, durationSec: s.seconds, warnSec: s.warnSec, ordered: false,
+      startedAt: Date.now(), beganAt: null, endedAt: null, durationSec: s.seconds, ordered: false,
       queue: present.map(p => p.id), log: [], current: null, didntGo: [],
       notHere: state.data.people.filter(p => !p.present).map(p => ({ id: p.id, name: p.name }))
     };
@@ -1220,8 +1217,6 @@ listen('change', e => {
   } else if (field === 'time') {
     s.seconds = clamp(toInt($('#minInput').value, 0) * 60 + toInt($('#secInput').value, 0), 5, 3600);
     $('#minInput').value = Math.floor(s.seconds / 60); $('#secInput').value = s.seconds % 60; saveData();
-  } else if (field === 'warnSec') {
-    s.warnSec = clamp(toInt(t.value, 30), 0, 600); t.value = s.warnSec; saveData();
   } else if (field === 'sound') { s.sound = t.checked; saveData(); }
   else if (field === 'autoStrip') { s.autoStrip = t.checked; saveData(); }
 });
