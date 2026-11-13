@@ -3,8 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Blocks every network request from this page, so names/photos can never be sent anywhere. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<!-- The page may not make any network requests (no connect-src), so names/photos can never be sent anywhere.
+     'self' is only for this site's own icon, manifest and offline cache (service worker). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#0e1322">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <title>Huddle Timer</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%8F%B1%EF%B8%8F%3C/text%3E%3C/svg%3E">
 <style>
@@ -201,12 +205,81 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .stage { padding: 18px; min-height: 520px; }
   .reel { --rowh: 96px; }
 }
+
+/* ---------- pop-out (floating window) ---------- */
+.away { max-width: 520px; margin: 14vh auto 0; padding: 0 20px; }
+.away .panel { text-align: center; display: grid; gap: 14px; justify-items: center; }
+.pop-btn { display: inline-flex; align-items: center; gap: 6px; }
+.pop-btn svg { flex: none; }
+.top-actions .btn { white-space: nowrap; }
+@media (max-width: 400px) { .brand-name { display: none; } }
+
+/* ---------- narrow "strip" window (e.g. docked beside Planner): fit everything without scrolling ---------- */
+@media (display-mode: standalone) { .foot { display: none; } }
+.list.cols { grid-template-columns: 1fr; }
+@media (max-width: 460px) {
+  .app { padding: 6px 8px 14px; }
+  .foot { display: none; }
+  .top { padding: 2px 0 8px; min-height: 0; gap: 8px; }
+  .brand { font-size: 1.05rem; gap: 8px; }
+  .logo { width: 30px; height: 30px; border-radius: 10px; font-size: .95rem; }
+  .top-actions { gap: 6px; }
+  .top-actions .btn { padding: 6px 10px; font-size: .85rem; border-radius: 10px; }
+  .pop-btn .pop-txt { display: none; }
+  .top-actions .pop-btn { padding: 6px 9px; }
+  .btn.big { padding: 12px 16px; font-size: 1.05rem; border-radius: 14px; }
+  .huddle { gap: 10px; }
+  .stage { min-height: 0; padding: 14px 12px; gap: 10px; border-radius: 20px; border-width: 2px; }
+  .reel { --rowh: 70px; border-radius: 18px; border-width: 2px; }
+  .reel-row { gap: 12px; padding: 0 16px; font-size: 21px; }
+  .avatar.m { --s: 46px; }
+  .pt { border-width: 9px; top: calc(var(--rowh) * 1.5 - 9px); }
+  .spin-btn { font-size: 1.5rem; padding: 12px 20px; letter-spacing: .14em; border-radius: 16px; box-shadow: 0 5px 0 color-mix(in srgb, var(--accent) 55%, #000); }
+  .who { gap: 4px; }
+  .who .avatar { border-width: 4px; }
+  .avatar.xl { --s: clamp(60px, 24cqw, 96px); }
+  .wname { font-size: clamp(22px, 8.5cqw, 32px); }
+  .tag { font-size: .72rem; padding: 2px 12px; }
+  .clock { font-size: clamp(56px, 28cqw, 120px); }
+  .bar { height: 10px; }
+  .actions { gap: 8px; width: 100%; }
+  .actions .btn { flex: 1 1 100%; }
+  .all-done .emoji { font-size: 3rem; } .all-done h2 { font-size: 1.5rem; }
+  .side { gap: 8px; }
+  .card { padding: 10px 12px; border-radius: 14px; }
+  .card h3 { margin-bottom: 6px; }
+  .meta b { font-size: 1.15rem; }
+  .list { gap: 6px; }
+  .list.cols { grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  .panel { padding: 14px; border-radius: 18px; }
+  h1 { font-size: 1.4rem; }
+  .sub { margin-bottom: 14px; font-size: .9rem; }
+  .add { flex-wrap: wrap; }
+  .set-row > strong { min-width: 0; width: 100%; }
+  /* one line per person: avatar | name | here-today tick | remove; "remove photo" drops under the name */
+  .person { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 4px 8px; padding: 6px 8px; }
+  .person .here { grid-column: 3; grid-row: 1; }
+  .here-txt { display: none; }
+  .row-actions { display: contents; }
+  .row-actions .icon-btn { grid-column: 4; grid-row: 1; }
+  .row-actions .link { grid-column: 2 / -1; grid-row: 2; justify-self: start; padding: 0 6px; }
+  .name-input { font-size: 1rem; padding: 8px 10px; }
+  .summary .actions .btn { flex: 1 1 100%; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
 </head>
 <body>
+<div id="away" class="away" hidden>
+  <div class="panel">
+    <h1>Popped out</h1>
+    <p class="sub">The Huddle Timer is floating in its own window above your other windows.</p>
+    <button class="btn primary big" data-action="popIn">Bring it back here</button>
+  </div>
+</div>
+<div id="shell">
 <div class="app">
   <div id="app"></div>
   <p class="foot">Runs entirely in your browser &mdash; names and photos never leave this computer.</p>
@@ -224,6 +297,7 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="sr" class="sr" aria-live="polite"></div>
 <noscript><p style="padding:24px">This page needs JavaScript turned on to work.</p></noscript>
+</div>
 
 <script>
 (() => {
@@ -232,7 +306,9 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 /* =====================================================================
    Helpers
    ===================================================================== */
-const $ = (sel, el = document) => el.querySelector(sel);
+let doc = document;   // the document that currently holds the UI (it moves into the pop-out window and back)
+const $ = (sel, el = doc) => el.querySelector(sel);
+const curWin = () => doc.defaultView || window;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const toInt = (v, d) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? n : d; };
@@ -377,13 +453,17 @@ const SOUNDS = {
 const sound = name => { if (state.data.settings.sound) { try { SOUNDS[name](); } catch (e) { /* ignore */ } } };
 
 /* Keep the screen awake during a huddle */
-let wakeLock = null;
+let wakeLock = null, wakeWin = null;
 async function holdAwake(on) {
   try {
-    if (on && 'wakeLock' in navigator && !wakeLock) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
-    } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+    const w = curWin();
+    if (wakeLock && (!on || wakeWin !== w)) { const old = wakeLock; wakeLock = null; await old.release(); }
+    if (on && !wakeLock && 'wakeLock' in w.navigator) {
+      wakeWin = w;
+      const lock = await w.navigator.wakeLock.request('screen');
+      wakeLock = lock;
+      lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+    }
   } catch (e) { /* not supported or denied - fine */ }
 }
 
@@ -450,11 +530,17 @@ function tick() {
 /* =====================================================================
    Rendering
    ===================================================================== */
+const ICON_OUT = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3.5" width="9" height="9" rx="1.5"/><path d="M8.5 1.5h6v6M14.5 1.5L8 8"/></svg>`;
+const ICON_IN = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M7.5 1.5h-6v6M1.5 1.5L8 8"/></svg>`;
+
 function headerHTML() {
+  const popBtn = pip
+    ? `<button class="btn pop-btn" data-action="popIn" title="Bring the timer back to the main window" aria-label="Dock back">${ICON_IN}<span class="pop-txt">Dock back</span></button>`
+    : canPop() ? `<button class="btn pop-btn" data-action="popOut" title="Float the timer above your other windows" aria-label="Pop out">${ICON_OUT}<span class="pop-txt">Pop out</span></button>` : '';
   let right = '';
   if (state.screen === 'huddle') right = `<button class="btn" data-action="goSetup">Setup</button><button class="btn danger" data-action="endHuddle">End huddle</button>`;
   else if (state.screen === 'setup' && state.huddle && !state.huddle.endedAt) right = `<button class="btn primary" data-action="backToHuddle">Back to huddle</button>`;
-  return `<header class="top"><div class="brand"><span class="logo" aria-hidden="true">⏱</span>Huddle</div><div class="top-actions">${right}</div></header>`;
+  return `<header class="top"><div class="brand"><span class="logo" aria-hidden="true">⏱</span><span class="brand-name">Huddle</span></div><div class="top-actions">${popBtn}${right}</div></header>`;
 }
 
 function startLabel() {
@@ -470,7 +556,7 @@ function setupHTML() {
     <li class="person ${p.present ? '' : 'away'}" data-id="${p.id}">
       <button class="avatar-btn" data-action="photo" title="Click to add or change the photo (or drop a picture here)" aria-label="Change photo for ${esc(p.name)}">${avatar(p, 's')}<span class="cam" aria-hidden="true">📷</span></button>
       <input class="name-input" type="text" value="${esc(p.name)}" maxlength="60" data-field="name" aria-label="Name">
-      <label class="here"><input type="checkbox" data-field="present" ${p.present ? 'checked' : ''}> Here today</label>
+      <label class="here" title="Here today"><input type="checkbox" data-field="present" aria-label="Here today" ${p.present ? 'checked' : ''}> <span class="here-txt">Here today</span></label>
       <span class="row-actions">
         ${p.photo ? `<button class="btn link" data-action="removePhoto">remove photo</button>` : ''}
         <button class="icon-btn" data-action="removePerson" aria-label="Remove ${esc(p.name)}" title="Remove from the list">✕</button>
@@ -481,9 +567,9 @@ function setupHTML() {
     ${ui.storageOk ? '' : `<div class="banner">Your browser isn't letting this page save anything (a private window can do that), so your list won't be remembered next time.</div>`}
     ${inProgress ? `<div class="banner">A huddle is still in progress. <button class="btn small" data-action="backToHuddle">Back to huddle</button></div>` : ''}
     <h1>Who's in today's huddle?</h1>
-    <p class="sub">Add your team, choose how long each person gets, then start. Your list is remembered next time.</p>
+    <p class="sub">Type a name and press Enter (or paste several, separated by commas), choose how long each person gets, then start. Your list is remembered next time.</p>
     <form id="addForm" class="add" autocomplete="off">
-      <input id="newName" type="text" maxlength="400" placeholder="Type a name and press Enter (or paste several, separated by commas)" aria-label="Add a person">
+      <input id="newName" type="text" maxlength="400" placeholder="Add a name" aria-label="Add a person">
       <button class="btn primary" type="submit">Add</button>
     </form>
     ${people.length ? `<ul class="people">${rows}</ul>` : `<div class="empty"><p>No one on the list yet.</p><button class="btn" data-action="sample">Add a few sample names to try it out</button></div>`}
@@ -547,7 +633,7 @@ function sideHTML(h) {
   }).join('');
   return `<aside class="side">
     <div class="card meta"><div><span class="lbl">Huddle time</span><b id="huddleClock">0:00</b></div><div><span class="lbl">Per person</span><b>${fmtSecs(h.durationSec)}</b></div></div>
-    <div class="card"><h3>Still to go (${pool.length})</h3>${pool.length ? `<ul class="list">${pool.map(p => `<li>${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span></li>`).join('')}</ul>` : '<p class="muted">No one left.</p>'}</div>
+    <div class="card"><h3>Still to go (${pool.length})</h3>${pool.length ? `<ul class="list cols">${pool.map(p => `<li>${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span></li>`).join('')}</ul>` : '<p class="muted">No one left.</p>'}</div>
     <div class="card"><h3>Done (${h.log.length})</h3>${done ? `<ul class="list">${done}</ul>` : '<p class="muted">No one yet.</p>'}</div>
     ${h.notHere.length ? `<div class="card"><h3>Not here (${h.notHere.length})</h3><ul class="list">${h.notHere.map(n => `<li data-id="${n.id}"><span class="lname">${esc(n.name)}</span><button class="btn small" data-action="addBack">Add back</button></li>`).join('')}</ul></div>` : ''}
   </aside>`;
@@ -611,7 +697,8 @@ function runReel(pool, winnerIdx) {
     for (let j = -1; j <= T + 1; j++) items.push(pool[(((i0 + j) % n) + n) % n]);
     track.style.transform = 'translateY(0)';
     track.innerHTML = items.map(reelRow).join('');
-    const total = items.length, dur = reduced() ? 900 : 3800 + randInt(800), t0 = performance.now();
+    const w = curWin();   // animate in whichever window currently shows the UI (main or pop-out)
+    const total = items.length, dur = reduced() ? 900 : 3800 + randInt(800), t0 = w.performance.now();
     let lastRow = 0, lastTick = 0, finished = false;
     const finish = () => {
       if (finished) return;
@@ -631,10 +718,10 @@ function runReel(pool, winnerIdx) {
       }
       const row = Math.round(pos);
       if (row !== lastRow) { lastRow = row; if (now - lastTick > 40) { lastTick = now; sound('tick'); } }
-      if (t < 1) requestAnimationFrame(frame); else finish();
+      if (t < 1) w.requestAnimationFrame(frame); else finish();
     };
-    requestAnimationFrame(frame);
-    setTimeout(finish, dur + 1000);   // safety net: browsers pause animation frames in background tabs
+    w.requestAnimationFrame(frame);
+    setTimeout(finish, dur + 1000);   // safety net (main-window timer): frames pause in background tabs, or the pop-out may be closed mid-spin
   });
 }
 
@@ -766,8 +853,12 @@ async function restoreFrom(file) {
 /* =====================================================================
    Event wiring
    ===================================================================== */
+// Listeners go on the document that shows the UI, so register them once and replay them on the pop-out window's document.
+const LISTENERS = [];
+function listen(type, fn) { LISTENERS.push([type, fn]); document.addEventListener(type, fn); }
+
 const actions = {
-  spin, startTimer, togglePause, doneTurn, skipTurn,
+  spin, startTimer, togglePause, doneTurn, skipTurn, popOut, popIn,
   finish: finishHuddle,
   goSetup() { state.screen = 'setup'; render(); },
   backToHuddle() { state.screen = 'huddle'; render(); },
@@ -826,7 +917,7 @@ const actions = {
   newHuddle() { state.huddle = null; state.screen = 'setup'; saveSession(); render(); }
 };
 
-document.addEventListener('click', e => {
+listen('click', e => {
   const el = e.target.closest('[data-action]');
   if (!el || el.disabled || ui.spinning) return;
   if (e.detail > 0 && el.tagName === 'BUTTON') el.blur();      // so Space/Enter shortcuts keep working after a mouse click
@@ -835,13 +926,13 @@ document.addEventListener('click', e => {
   if (fn) fn(row ? row.dataset.id : undefined);
 });
 
-document.addEventListener('submit', e => {
+listen('submit', e => {
   if (e.target.id !== 'addForm') return;
   e.preventDefault();
   const i = $('#newName'); addPeople(i.value); i.value = '';
 });
 
-document.addEventListener('change', e => {
+listen('change', e => {
   const t = e.target, field = t.dataset && t.dataset.field;
   if (!field) return;
   const row = t.closest('[data-id]'), p = row && person(row.dataset.id), s = state.data.settings;
@@ -872,7 +963,7 @@ $('#restoreInput').addEventListener('change', e => {
 });
 
 // Drop a picture onto someone's row to set their photo (and stop the browser from opening dropped files)
-['dragover', 'drop'].forEach(type => document.addEventListener(type, e => {
+['dragover', 'drop'].forEach(type => listen(type, e => {
   if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
   e.preventDefault();
   if (type === 'drop') {
@@ -883,15 +974,62 @@ $('#restoreInput').addEventListener('change', e => {
 }));
 
 // Keyboard: Space = spin / start / pause-resume, Enter = done
-document.addEventListener('keydown', e => {
+listen('keydown', e => {
   if (dlg.open || e.repeat || ui.spinning || state.screen !== 'huddle' || !state.huddle) return;
-  if (e.target !== document.body) return;
+  if (e.target !== (e.target.ownerDocument || e.target).body) return;
   const h = state.huddle, cur = h.current;
   if (e.code === 'Space') {
     e.preventDefault();
     if (!cur) spin(); else if (cur.phase === 'landed') startTimer(); else togglePause();
   } else if (e.code === 'Enter' && cur && cur.phase !== 'landed') { e.preventDefault(); doneTurn(); }
 });
+
+/* =====================================================================
+   Pop-out: float the timer in an always-on-top window (Chrome / Edge "Document Picture-in-Picture").
+   The whole UI (#shell) is moved into that window and moved back when it closes; the app's state stays here.
+   ===================================================================== */
+const shell = $('#shell');
+const away = $('#away');
+let pip = null;                                  // the pop-out window while it is open
+const canPop = () => 'documentPictureInPicture' in window;
+
+// The clock ticks from whichever window shows the UI, because a hidden main window gets its timers throttled.
+let ticker = { win: null, id: 0 };
+function stopTicker() { if (ticker.win) { try { ticker.win.clearInterval(ticker.id); } catch (e) { /* window already gone */ } } ticker = { win: null, id: 0 }; }
+function startTicker() {
+  const w = curWin();
+  if (ticker.win === w) return;
+  stopTicker();
+  ticker = { win: w, id: w.setInterval(tick, 100) };
+}
+
+async function popOut() {
+  if (pip || !canPop()) return;
+  try {
+    const w = await window.documentPictureInPicture.requestWindow({ width: 340, height: clamp(screen.availHeight - 140, 480, 780) });
+    pip = w;
+    w.document.documentElement.lang = 'en';
+    w.document.head.append(document.head.querySelector('style').cloneNode(true));
+    LISTENERS.forEach(([type, fn]) => w.document.addEventListener(type, fn));
+    w.document.body.append(shell);
+    doc = w.document;
+    away.hidden = false;
+    startTicker();
+    w.addEventListener('pagehide', popIn);       // fires when the pop-out window is closed or sent back by the browser
+    render();
+  } catch (e) { pip = null; doc = document; toast("Couldn't open the pop-out window here."); }
+}
+
+function popIn() {
+  if (!pip) return;
+  const w = pip;
+  pip = null; doc = document;
+  document.body.append(shell);
+  away.hidden = true;
+  startTicker();
+  render();
+  try { w.close(); } catch (e) { /* already closed */ }
+}
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) { holdAwake(state.screen === 'huddle'); tick(); }
@@ -905,7 +1043,11 @@ document.addEventListener('visibilitychange', () => {
   const sess = loadSession();
   if (sess) { state.huddle = sess.huddle; state.screen = sess.screen; }
   render();
-  setInterval(tick, 100);
+  startTicker();
+  // Offline support + "install as app". Only on the real web site (or localhost), never for a file:// copy.
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* optional feature */ }));
+  }
 })();
 })();
 </script>
