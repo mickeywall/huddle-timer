@@ -20,10 +20,9 @@ Everything runs in the browser, and nothing is ever uploaded.
 3. Untick **Here today** for anyone who is out.
 4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
    "Beside Planner" below for how that works in each browser).
-5. Press **Randomize order**. Every name leaves its row and whirls around the screen, then the orbits spiral
-   in and the names settle into a ring in the new order (number 1 at the top, going clockwise). The first
-   person lights up gold with a ring and confetti, and then everyone is dealt from the ring into the numbered
-   list, each row coming alive as its name lands (click anywhere to skip the show). Not happy with it?
+5. Press **Randomize order**. Row by row, from the top, each name tile cracks, breaks into pieces that fall
+   away, and a different name is underneath, numbered in the new order (click anywhere to skip the show).
+   Then the new list slides into place. Not happy with it?
    Press **Randomize again**. Then press **Start** (it says who goes first).
 6. Each person's countdown runs. Press **Done** when they finish and the next person starts automatically
    (the button names who is next). **Pause** stops the clock. The **Up next** list shows everyone
@@ -160,17 +159,16 @@ loosened deliberately, adding only
 
 `h.ordered` is false until **Randomize order** is pressed (queue is in list order), then true. `randomize()`
 decides and saves the order first and only then plays the show, with a safety timer (6.5 s) so the UI can
-never get stuck. The show has three parts, all
-time-based and drawn on a frosted `.scr` screen placed exactly over the stage (it lives on the page body, so it
-survives the re-render): (1) copies of every list row (`chips`, which borrow the `.order li` styling, while the
-real rows are hidden by `.order.dealing`) leave their rows and whirl on their own elliptical orbits (random speed,
-direction and radius, a little pseudo-3D: near side bigger and brighter); (2) from `T0` the orbits spiral in
-(`place()`: a smooth deceleration onto each name's slot on a ring, number 1 at the top, clockwise), then the
-winner goes gold with a ring, `confetti()` and a "goes first" line; (3) `deal()` renders the real ordered list
-(hidden rows), and each chip flies to its row with the Web Animations API; when it lands, its row gets the class
-`in` (sheen, number pop, glow on #1) and the chip is removed. Rows scrolled out of view (a long list in a narrow
-window) get their name landing at the list's edge, fading. Clicking the screen skips straight to the finished
-list, and a safety timer (8 s) guarantees the UI can never get stuck. In a narrow window, sizes in the
+never get stuck. The show: a copy of the
+stage (`stage.cloneNode`, class `crumble`, in a wrapper with the same classes as `#app` so the narrow-window list
+styles apply) is laid over the real one. Row by row (`GAP` apart) `startCrack()` draws crack lines on the tile
+(SVG paths along the interior edges of a jittered grid from `crackPieces()`) and shakes it, then `breakTile()`
+clones the tile into one clipped copy per grid cell (`clip-path: polygon`), flings them down and away with the Web
+Animations API, and swaps the tile for the next name in the new order (a numbered row, with a brief glow). When
+every tile has broken, `settle()` renders the real ordered list (rows hidden by `.order.dealing`), fades the copy's
+background and slides its rows to the real rows' places, then `finish()` removes the copy. Rows scrolled out of
+view (a long list in a narrow window) just swap. There is deliberately no highlight on the first person. Clicking
+the copy skips straight to the finished list, and a safety timer (9 s) guarantees the UI can never get stuck. In a narrow window, sizes in the
 running view use `clamp()` with `vh` units and the running card grows to take leftover height, so a tall strip
 is filled instead of leaving empty space at the bottom. The running view never scrolls as a whole
 (`#app.is-huddle` is the window height with `overflow: hidden`): the running card keeps its height and the

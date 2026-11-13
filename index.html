@@ -163,44 +163,26 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .order li { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
 .order .num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 .order .oname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 1.05rem; }
-/* randomize: a frosted screen over the stage where EVERY name whirls around, then spirals into a ring in the new order, and is
-   dealt from there into the numbered list. Each row comes alive (class "in") as its name lands on it. Click to skip. */
+/* randomize: a copy of the stage is laid over the real one. Row by row, top to bottom, each name tile cracks, breaks into
+   pieces that fall away, and a different name is underneath. Then the new list slides to its real place. Click to skip. */
 .order.dealing li { visibility: hidden; }
-.order.dealing li.in { visibility: visible; }
-.order li.in { position: relative; overflow: hidden; }
-.order li.in::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .3) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .8s ease-out both; }
-.order li.in .num { animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
-.order li.in:first-child { animation: firstglow 1.5s ease-out both; }
-ol.order li:first-child { border-color: var(--warn); }
-ol.order li:first-child .num { background: var(--warn); color: #20160a; }
-@keyframes sheen { to { transform: translateX(130%); } }
+.stage.crumble { position: fixed; z-index: 40; margin: 0; cursor: pointer; transition: background .35s, border-color .35s, box-shadow .35s; }
+.stage.crumble.fade { background: transparent; border-color: transparent; box-shadow: none; pointer-events: none; cursor: default; }
+.stage.crumble .prep > :not(.order) { transition: opacity .3s; }
+.stage.crumble.fade .prep > :not(.order) { opacity: 0; }
+.crumble li { position: relative; }
+.crumble .crk { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.crumble .crk path { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .7)); animation: crack .26s ease-out forwards; }
+@keyframes crack { to { stroke-dashoffset: 0; } }
+.crumble li.shake { animation: shake .3s linear; }
+@keyframes shake { 20% { transform: translate(-1.5px, 1px) rotate(-.4deg); } 40% { transform: translate(1.5px, -1px) rotate(.4deg); } 60% { transform: translate(-1px, -1px); } 80% { transform: translate(1px, 1px); } }
+.crumble li.reveal { animation: reveal .8s ease-out; }
+.crumble li.reveal .num { animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+@keyframes reveal { 0% { filter: brightness(1.9); box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 80%, transparent); } 100% { filter: none; box-shadow: none; } }
 @keyframes numpop { from { transform: scale(0) rotate(-120deg); } to { transform: none; } }
-@keyframes firstglow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) 85%, transparent); } 100% { box-shadow: 0 0 0 22px transparent; } }
-
-.scr { position: fixed; z-index: 40; overflow: hidden; cursor: pointer; }
-.scr.go { pointer-events: none; cursor: default; }
-.scr-bg { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 16px 16px 18px; text-align: center;
-  background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--accent) 26%, var(--panel)) 0%, color-mix(in srgb, var(--panel) 90%, transparent) 78%);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: drawin .3s ease-out both; }
-@keyframes drawin { from { opacity: 0; } }
-.aurora { position: absolute; left: 50%; top: 48%; width: max(130%, 620px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
-  background: conic-gradient(#6f8dff, #c58bff, #ff7a90, #f6b93b, #33d391, #6f8dff); filter: blur(48px); opacity: .34; animation: spinA 2.8s linear infinite; }
-@keyframes spinA { to { rotate: 360deg; } }
-.draw-title { position: relative; font-weight: 800; font-size: .8rem; letter-spacing: .24em; text-transform: uppercase; color: transparent; -webkit-background-clip: text; background-clip: text;
-  background-image: linear-gradient(90deg, var(--muted) 20%, var(--text) 50%, var(--muted) 80%); background-size: 240% 100%; animation: shimmer 1.2s linear infinite; }
-@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
-.draw-cap { position: relative; margin-top: auto; min-height: 2.2em; font-size: clamp(1.1rem, 5cqw, 1.7rem); font-weight: 800; opacity: 0; transform: translateY(12px) scale(.94); transition: opacity .25s, transform .35s cubic-bezier(.34, 1.56, .64, 1); }
-.draw-cap.show { opacity: 1; transform: none; }
-.draw-cap .gt { background: linear-gradient(90deg, #ffd66b, #ff7a90, #c58bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.draw-skip { position: relative; font-size: .72rem; color: var(--muted); opacity: .7; }
-/* the flying names: copies of the list rows (they borrow the .order row styling), moved around by script */
-.scr .chips { position: absolute; inset: 0; margin: 0; padding: 0; display: block; list-style: none; }
-.scr .chips li { position: absolute; left: 0; top: 0; margin: 0; width: var(--cw); transform-origin: 50% 50%; will-change: transform, opacity; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
-.scr .chips li .x, .scr .chips li .num { display: none; }
-.scr .chips li.numbered .num { display: grid; animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
-.scr .chips li.gold { border-color: var(--warn); box-shadow: 0 0 30px color-mix(in srgb, var(--warn) 75%, transparent); transition: transform .45s cubic-bezier(.34, 1.56, .64, 1); }
-.shock { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 3px solid var(--warn); pointer-events: none; opacity: 0; }
-.confetti { position: fixed; width: 9px; height: 15px; border-radius: 2px; pointer-events: none; z-index: 60; will-change: transform; }
+.crumble .shards { position: absolute; inset: 0; margin: 0; padding: 0; display: block; list-style: none; pointer-events: none; z-index: 5; }
+.crumble .shard { position: absolute; will-change: transform, opacity; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .4)); }
+.crumble .shard li { width: 100%; height: 100%; margin: 0; }
 .x { flex: none; border: 0; background: none; color: var(--muted); width: 28px; height: 28px; border-radius: 8px; font-size: .95rem; }
 .x:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
 
@@ -602,18 +584,17 @@ function tone(freq, start, dur, vol = .08, type = 'sine') {
   g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
   o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .03);
 }
-function sweep(f0, f1, dur, vol = .05, type = 'sawtooth') {   // a rising/falling "whoosh"
+function noise(dur, vol) {                          // a short burst of filtered noise (glass)
   const c = ensureAudio(); if (!c) return;
-  const t0 = c.currentTime, o = c.createOscillator(), g = c.createGain();
-  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
-  g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
-  o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .03);
+  const n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+  f.type = 'highpass'; f.frequency.value = 1500; g.gain.value = vol; src.buffer = buf;
+  src.connect(f).connect(g).connect(c.destination); src.start();
 }
 const SOUNDS = {
-  tick(p = 0) { tone(850 + p * 95, 0, .035, .028, 'square'); },                      // the shuffle ticks climb in pitch
-  whoosh() { sweep(160, 1300, .4, .045); },
-  lock() { tone(110, 0, .3, .18); tone(523, .04, .4, .08); tone(659, .12, .45, .08); tone(784, .2, .5, .08); tone(1047, .29, .9, .07); },   // the reel clunks onto the winner
-  deal(i = 0) { tone(600 + i * 55, 0, .07, .03, 'triangle'); },                       // one soft pip per name dealt into the list
+  crack() { tone(1800 + Math.random() * 900, 0, .03, .03, 'square'); tone(220, 0, .05, .04, 'triangle'); },   // a tile starts to crack
+  shatter() { noise(.28, .08); tone(140, 0, .12, .09); },                              // it breaks
   chime() { tone(660, 0, .35, .09); tone(990, .13, .55, .08); },
   warn() { tone(880, 0, .25, .09); },
   timesUp() { tone(440, 0, .45, .12, 'triangle'); tone(330, .38, .8, .12, 'triangle'); }
@@ -878,40 +859,29 @@ function render() {
 /* =====================================================================
    The huddle: randomize the order, then each turn starts automatically
    ===================================================================== */
-// Confetti: paper pieces thrown up from a point, then falling with air drag, gravity and a flutter. They live on the page
-// itself (not inside the stage), so they keep falling while the list is being drawn.
-function confetti(cx, cy, count = 90) {
-  if (reduced()) return;
-  const colors = ['#6f8dff', '#33d391', '#f6b93b', '#ff7a90', '#c58bff', '#ffd66b', '#5ad1ff'];
-  for (let k = 0; k < count; k++) {
-    const el = doc.createElement('i');
-    el.className = 'confetti';
-    el.style.cssText = `left:${cx}px;top:${cy}px;background:${colors[k % colors.length]};${k % 3 === 0 ? 'border-radius:50%;width:10px;height:10px;' : ''}`;
-    doc.body.appendChild(el);
-    const ang = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.15, sp = 420 + Math.random() * 560;
-    const vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp, g = 900 + Math.random() * 300, drag = 1.8 + Math.random() * .8;
-    const dur = 1700 + Math.random() * 1100, spin = (Math.random() - .5) * 1400, flip = 360 + Math.random() * 720;
-    const frames = [];
-    for (let s = 0; s <= 12; s++) {
-      const u = s / 12, t = u * dur / 1000, k1 = (1 - Math.exp(-drag * t)) / drag;
-      frames.push({
-        transform: `translate(${(vx * k1).toFixed(1)}px, ${((vy - g / drag) * k1 + (g / drag) * t).toFixed(1)}px) rotate(${(spin * u).toFixed(0)}deg) rotateX(${(flip * u).toFixed(0)}deg)`,
-        opacity: u > .75 ? (1 - u) / .25 : 1
-      });
+// A name tile of size w x h split into irregular pieces by a jittered grid. `cells` are the pieces (polygons) and `lines` the
+// crack lines (the interior edges of the grid, so the cracks drawn on the tile are exactly where it breaks).
+function crackPieces(w, h) {
+  const cols = clamp(Math.round(w / 90), 3, 6), rows = 2, pts = [];
+  for (let r = 0; r <= rows; r++) {
+    pts.push([]);
+    for (let c = 0; c <= cols; c++) {
+      const x = c === 0 || c === cols ? c / cols * w : (c + (Math.random() - .5) * .7) / cols * w;
+      const y = r === 0 || r === rows ? r / rows * h : (r + (Math.random() - .5) * .7) / rows * h;
+      pts[r].push([x, y]);
     }
-    const a = el.animate(frames, { duration: dur, easing: 'linear', fill: 'forwards' });
-    a.onfinish = () => el.remove();
   }
+  const cells = [], lines = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells.push([pts[r][c], pts[r][c + 1], pts[r + 1][c + 1], pts[r + 1][c]]);
+  for (let r = 1; r < rows; r++) lines.push(pts[r]);
+  for (let c = 1; c < cols; c++) lines.push(pts.map(row => row[c]));
+  return { cells, lines };
 }
 
-// Randomize. The real order is decided and saved first; everything after that is show, and it shows ALL the names:
-//   1. every name leaves its row and whirls around the stage on its own orbit (different speeds, directions and sizes,
-//      a little pseudo-3D: the near side is bigger and brighter), with ticks that slow down;
-//   2. the orbits spiral in and the names settle into a ring in the NEW order (number 1 at the top, going clockwise);
-//      the first speaker lights up gold with a ring, confetti and a "goes first" line;
-//   3. the names are dealt from the ring into the numbered list, one row at a time (each row comes alive as its name lands).
-// Everything is time-based (so it is smooth at any frame rate), clicking the screen skips it, and a safety timer makes
-// sure the UI can never get stuck.
+// Randomize. The real order is decided and saved first; everything after that is show. A copy of the stage is laid over the
+// real one, and row by row (top to bottom) each name tile cracks, breaks into pieces that fall away, and a different name is
+// underneath (the new order, numbered). Then the new list slides down to its real place. Clicking skips it, and a safety
+// timer makes sure the UI can never get stuck.
 function randomize() {
   const h = state.huddle;
   if (!h || h.current || ui.busy) return;
@@ -924,117 +894,107 @@ function randomize() {
   if (ids.length < 2 || reduced() || !stage || !ul || !ul.children.length) { sound('chime'); render(); return; }
   ui.busy = true;
 
-  const N = ids.length, TWO = Math.PI * 2;
-  const T0 = 900, DUR = 1100, TEND = T0 + DUR, G = 380, HOLD = 750;   // free swirl until T0, spiral in until TEND, then the lock-in
-  const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const N = ids.length, GAP = Math.min(120, 1500 / N), CRACK = 300;
+  // The copy sits in a wrapper with the same classes as #app, so the narrow-window styles for the name list apply to it too.
+  const sb = stage.getBoundingClientRect();
+  const clone = stage.cloneNode(true);
+  clone.removeAttribute('id'); clone.classList.add('crumble');
+  clone.style.cssText = `left:${sb.left}px;top:${sb.top}px;width:${sb.width}px;height:${sb.height}px;min-height:0`;
+  const list = clone.querySelector('.order');
+  list.removeAttribute('id');
+  const shards = doc.createElement('ul');
+  shards.className = 'order shards';
+  clone.appendChild(shards);
+  const host = doc.createElement('div');
+  host.className = $('#app').className;
+  host.appendChild(clone);
+  doc.body.appendChild(host);
+  list.scrollTop = ul.scrollTop;
+  const cr = clone.getBoundingClientRect(), box = list.getBoundingClientRect();
+  const tiles = Array.from(list.children), pieces = new Map();
+  const visible = r => r.bottom > box.top + 2 && r.top < box.bottom - 2;
+  const audible = i => i % Math.ceil(N / 10) === 0;
+  const newTile = (id, k) => { const t = doc.createElement('ul'); t.innerHTML = orderRow(person(id), k + 1, k); return t.firstElementChild; };
 
-  // A frosted screen exactly over the stage, holding a copy of every row. The rows themselves are hidden meanwhile.
-  const startIds = Array.from(ul.children).map(li => li.dataset.id).filter(id => person(id));
-  const rowOf = new Map(Array.from(ul.children).map(li => [li.dataset.id, li]));
-  const sb = stage.getBoundingClientRect(), r0 = rowOf.get(startIds[0]).getBoundingClientRect();
-  const W = sb.width, H = sb.height, w0 = r0.width, h0 = r0.height;
-  const scr = doc.createElement('div');
-  scr.className = 'scr';
-  scr.style.cssText = `left:${sb.left}px;top:${sb.top}px;width:${W}px;height:${H}px;border-radius:${getComputedStyle(stage).borderRadius};--cw:${w0}px`;
-  scr.innerHTML = `<div class="scr-bg"><div class="aurora"></div><div class="draw-title">Shuffling the order</div>
-      <div class="draw-cap" id="drawCap"><span class="em">🎉</span> <span class="gt">${esc(person(ids[0]).name)} goes first!</span></div>
-      <div class="draw-skip">Click to skip</div></div>
-    <ul class="order chips">${startIds.map(id => { const k = ids.indexOf(id); return orderRow(person(id), k + 1, k); }).join('')}</ul><div class="shock"></div>`;
-  doc.body.appendChild(scr);
-  ul.classList.add('dealing');
-
-  // The ring (an ellipse in the middle of the stage) and each name's own orbit.
-  const s0 = clamp(Math.min(.62 - N * .012, W * .66 / w0), .28, .6);   // size of a name while it flies (more names: smaller)
-  const cx = W / 2, cy = H * .5 - 6;
-  const Rx = Math.max(24, W / 2 - w0 * s0 * 1.2 / 2 - 14), Ry = clamp(H * .5 - 72, 36, 300);
-  const chips = Array.from(scr.querySelectorAll('.chips li'));
-  const P = chips.map((el, i) => {
-    const id = startIds[i], k = ids.indexOf(id), r = rowOf.get(id).getBoundingClientRect();
-    const om = (Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 3);   // its own speed and direction (rad/s)
-    const de = Math.random() * TWO, thT = -Math.PI / 2 + TWO * k / N;     // starting angle, and its place on the ring
-    const phi0 = de + om * T0 / 1000;
-    const phi0p = phi0 + TWO * Math.round((-om * DUR / 2000 - phi0) / TWO);   // spiral in: decelerate smoothly onto the ring slot
-    return { el, k, om, de, thT, phi0p, eps: phi0p + om * DUR / 2000, R0: .3 + Math.random() * .85, ph: Math.random() * TWO,
-      sx: clamp(r.left - sb.left + r.width / 2, 0, W), sy: clamp(r.top - sb.top + r.height / 2, 0, H), t: '', op: 1 };
-  });
-  const place = (p, ms) => {
-    const sec = ms / 1000, u = clamp((ms - T0) / DUR, 0, 1), e = easeIO(u);
-    const off = ms <= T0 ? p.de + p.om * sec : p.phi0p + p.om * (DUR / 1000) * (u - u * u / 2) - p.eps * e;
-    const rf = (p.R0 + (1 - p.R0) * e) * (1 + .1 * Math.sin(sec * p.om * .8 + p.ph) * (1 - e));
-    const th = p.thT + off, depth = (Math.sin(th) + 1) / 2;                // depth: 0 = far side (top), 1 = near side (bottom)
-    const g = easeOut(clamp(ms / G, 0, 1));                                // first it leaves its row and flies to its orbit
-    const x = p.sx + (cx + Math.cos(th) * Rx * rf - p.sx) * g, y = p.sy + (cy + Math.sin(th) * Ry * rf - p.sy) * g;
-    const sc = 1 + (s0 * (.8 + .4 * depth) - 1) * g, rot = Math.cos(th) * 9 * (1 - e) * g;
-    p.op = +(1 + (.55 + .45 * depth - 1) * g).toFixed(2);
-    p.t = `translate(${(x - w0 / 2).toFixed(1)}px, ${(y - h0 / 2).toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(1)}deg)`;
-    p.el.style.transform = p.t; p.el.style.opacity = p.op; p.el.style.zIndex = Math.round(depth * 100);
-  };
-
-  let done = false, locked = false, rendered = false, start = 0, lastTick = -99;
+  let done = false, rendered = false;
   const finish = () => {
     if (done) return;
     done = true;
     if (!rendered) { rendered = true; render(); }                    // skipped (or stuck): just show the finished list
     else { const l = $('#orderList'); if (l) l.classList.remove('dealing'); }
-    scr.remove(); ui.busy = false;
+    host.remove(); ui.busy = false;
   };
-  const deal = () => {                                               // part 3: from the ring into the list
+  const startCrack = i => {                                          // cracks run across the tile, and it shakes
+    const li = tiles[i], r = li.getBoundingClientRect();
+    if (done || !visible(r)) return;
+    const pc = crackPieces(r.width, r.height);
+    pieces.set(i, pc);
+    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'crk');
+    svg.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);
+    svg.innerHTML = pc.lines.map(l => `<path pathLength="1" d="M${l.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L')}"/>`).join('');
+    li.appendChild(svg);
+    li.classList.add('shake');
+    if (audible(i)) sound('crack');
+  };
+  const breakTile = i => {                                           // it breaks: pieces fall, the new name is underneath
+    if (done) return;
+    const li = tiles[i], r = li.getBoundingClientRect(), pc = pieces.get(i), fresh = newTile(ids[i], i);
+    if (pc) {
+      const base = li.cloneNode(true);
+      base.classList.remove('shake');
+      const crk = base.querySelector('.crk'); if (crk) crk.remove();
+      pc.cells.forEach(cell => {
+        const sh = doc.createElement('div'), poly = cell.map(p => `${p[0].toFixed(1)}px ${p[1].toFixed(1)}px`).join(', ');
+        const mx = cell.reduce((s, p) => s + p[0], 0) / 4, my = cell.reduce((s, p) => s + p[1], 0) / 4;
+        sh.className = 'shard';
+        sh.style.cssText = `left:${(r.left - cr.left - clone.clientLeft).toFixed(1)}px;top:${(r.top - cr.top - clone.clientTop).toFixed(1)}px;width:${r.width}px;height:${r.height}px;transform-origin:${mx.toFixed(1)}px ${my.toFixed(1)}px`;
+        const piece = base.cloneNode(true);
+        piece.style.clipPath = `polygon(${poly})`;
+        sh.appendChild(piece);
+        shards.appendChild(sh);
+        const side = (mx - r.width / 2) / (r.width / 2), dx = side * (20 + Math.random() * 50) + (Math.random() - .5) * 30;
+        const dy = 170 + Math.random() * 230, rot = side * (20 + Math.random() * 70) + (Math.random() - .5) * 60, dur = 750 + Math.random() * 400;
+        const a = sh.animate([
+          { transform: 'none', opacity: 1, easing: 'ease-out' },
+          { transform: `translate(${(dx * .3).toFixed(1)}px, ${(-4 - Math.random() * 10).toFixed(1)}px) rotate(${(rot * .25).toFixed(1)}deg)`, opacity: 1, offset: .16, easing: 'cubic-bezier(.5, 0, .9, .6)' },
+          { transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) rotate(${rot.toFixed(1)}deg)`, opacity: 0 }
+        ], { duration: dur, delay: Math.random() * 90, fill: 'forwards' });
+        a.onfinish = () => sh.remove();
+        w.setTimeout(() => sh.remove(), dur + 400);                  // a timer too, in case animation events are held back
+      });
+      if (audible(i)) sound('shatter');
+    }
+    fresh.classList.add('reveal');
+    li.replaceWith(fresh);
+    tiles[i] = fresh;
+  };
+  const settle = () => {                                             // every tile has broken: the new list slides to its real place
     if (done) return;
     rendered = true; ui.deal = true; render();
-    scr.classList.add('go');
-    scr.querySelector('.scr-bg').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'forwards' });
-    const list = $('#orderList'), rows = Array.from(list.children), box = list.getBoundingClientRect(), cr = scr.getBoundingClientRect();
-    const gap = Math.min(55, 800 / N);
+    clone.classList.add('fade');
+    const rows = Array.from($('#orderList').children);
     let last = 0;
-    P.forEach(p => {
-      const row = rows[p.k];
-      if (!row) { p.el.remove(); return; }
-      const rr = row.getBoundingClientRect();
-      const out = rr.top < box.top - 1 || rr.bottom > box.bottom + 1;   // a row scrolled out of view: its name lands at the edge and fades
-      const top = out ? clamp(rr.top, box.top, Math.max(box.top, box.bottom - rr.height)) : rr.top;
-      const delay = p.k * gap;
-      last = Math.max(last, delay + 620);
-      p.el.classList.add('numbered');
-      const a = p.el.animate([{ transform: p.t, opacity: p.op },
-        { transform: `translate(${(rr.left - cr.left).toFixed(1)}px, ${(top - cr.top).toFixed(1)}px) scale(1) rotate(0deg)`, opacity: out ? 0 : 1 }],
-        { duration: 620, delay, easing: 'cubic-bezier(.2, .85, .25, 1.1)', fill: 'both' });
-      const land = () => { if (!row.classList.contains('in')) { row.classList.add('in'); p.el.remove(); } };   // the name arrives: its row comes alive
-      a.onfinish = land;
-      w.setTimeout(land, delay + 660);                                // a timer too, in case animation events are held back
-      if (p.k < 12) w.setTimeout(() => sound('deal', p.k), delay + 200);
+    Array.from(list.children).forEach((li, i) => {
+      const a = li.getBoundingClientRect(), b = rows[i] && rows[i].getBoundingClientRect();
+      if (!b) return;
+      const d = i * 20;
+      last = Math.max(last, d + 500);
+      li.animate([{ transform: 'none' }, { transform: `translate(${(b.left - a.left).toFixed(1)}px, ${(b.top - a.top).toFixed(1)}px)` }],
+        { duration: 500, delay: d, easing: 'cubic-bezier(.2, .85, .25, 1.08)', fill: 'both' });
     });
-    w.setTimeout(finish, last + 150);
+    sound('chime');
+    w.setTimeout(finish, last + 120);
   };
-  const lock = () => {                                               // part 2's finish: the ring is complete
-    locked = true;
-    P.forEach(p => place(p, TEND));
-    const win = P.find(p => p.k === 0);
-    win.el.classList.add('gold'); win.el.style.zIndex = 200; void win.el.offsetWidth;
-    win.t = win.t.replace(/scale\([^)]*\)/, `scale(${(s0 * 1.6).toFixed(3)})`).replace(/rotate\([^)]*\)/, 'rotate(0deg)'); win.op = 1;
-    win.el.style.transform = win.t; win.el.style.opacity = 1;
-    $('#drawCap').classList.add('show');
-    $('#sr').textContent = `${person(ids[0]).name} goes first`;
-    sound('lock');
-    const shock = scr.querySelector('.shock');
-    shock.style.left = cx + 'px'; shock.style.top = cy + 'px';
-    shock.animate([{ transform: 'scale(.3)', opacity: .9 }, { transform: 'scale(5)', opacity: 0 }], { duration: 850, easing: 'cubic-bezier(.1, .7, .3, 1)' });
-    confetti(sb.left + cx, sb.top + cy);
-    w.setTimeout(deal, HOLD);
-  };
-  const frame = () => {
-    if (done || locked) return;
-    const ms = Date.now() - start;
-    P.forEach(p => place(p, Math.min(ms, TEND)));
-    if (ms - lastTick > 55 + 200 * Math.pow(Math.min(1, ms / TEND), 2)) { lastTick = ms; sound('tick', Math.min(14, ms / TEND * 14)); }   // ticks slow down
-    if (ms >= TEND) lock(); else w.requestAnimationFrame(frame);
-  };
-  scr.addEventListener('click', finish);
-  start = Date.now();
-  P.forEach(p => place(p, 0));
-  sound('whoosh');
-  w.requestAnimationFrame(frame);
-  setTimeout(finish, 8000);   // safety net on the main window (the pop-out may close, or frames may pause in a hidden window)
+
+  tiles.forEach((li, i) => {
+    const d = 250 + i * GAP + Math.random() * 60;
+    w.setTimeout(() => startCrack(i), d);
+    w.setTimeout(() => breakTile(i), d + CRACK);
+  });
+  w.setTimeout(settle, 250 + (N - 1) * GAP + 60 + CRACK + 950);
+  clone.addEventListener('click', finish);
+  setTimeout(finish, 9000);   // safety net on the main window (the pop-out may close, or timers may be held back)
 }
 
 function startNext() {
