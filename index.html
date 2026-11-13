@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Blocks every network request from this page, so names/photos can never be sent anywhere. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Huddle Timer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%8F%B1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  color-scheme: dark light;
+  --bg: #0e1322; --bg2: #16203a; --panel: #182036; --panel2: #1f2947;
+  --text: #eef1fa; --muted: #98a4c2; --line: #2c3757;
+  --accent: #6f8dff; --accent-ink: #0b1020;
+  --good: #33d391; --warn: #f6b93b; --bad: #ff4f60;
+  --shadow: 0 12px 34px rgba(0, 0, 0, .35);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f3f5fb; --bg2: #e6ebf8; --panel: #ffffff; --panel2: #eef1fa;
+    --text: #141a2c; --muted: #56627f; --line: #d6dcee;
+    --accent: #3a5bd9; --accent-ink: #ffffff;
+    --good: #0d9a60; --warn: #b87500; --bad: #d4283b;
+    --shadow: 0 12px 34px rgba(30, 45, 90, .12);
+  }
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; color: var(--text); line-height: 1.4;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 50% -10%, var(--bg2), var(--bg)) fixed;
+}
+.app { max-width: 1200px; margin: 0 auto; padding: 14px 20px 40px; }
+h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 4vw, 2.2rem); letter-spacing: -.01em; }
+h3 { margin: 0 0 10px; font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.good { color: var(--good); } .bad { color: var(--bad); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- header ---------- */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0 18px; min-height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.3rem; letter-spacing: .01em; }
+.logo { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 1.15rem; }
+.top-actions { display: flex; gap: 10px; }
+
+/* ---------- buttons & inputs ---------- */
+button { font: inherit; color: inherit; cursor: pointer; }
+.btn { border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 10px 16px; border-radius: 12px; font-weight: 600; transition: border-color .15s, transform .05s, filter .15s; }
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+.btn.big { padding: 16px 26px; font-size: 1.2rem; border-radius: 16px; }
+.btn.small { padding: 5px 10px; font-size: .85rem; border-radius: 9px; }
+.btn.link { background: none; border: 0; padding: 4px 6px; color: var(--muted); font-weight: 500; font-size: .85rem; text-decoration: underline; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn kbd { margin-left: 10px; font: inherit; font-size: .65em; opacity: .75; border: 1px solid currentColor; border-radius: 6px; padding: 1px 7px; vertical-align: middle; }
+input[type=text], input[type=number] { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; min-width: 0; }
+input[type=number] { width: 5.2rem; text-align: center; }
+input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* ---------- shared panels ---------- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 28px; box-shadow: var(--shadow); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+.banner { background: color-mix(in srgb, var(--warn) 16%, var(--panel)); border: 1px solid var(--warn); border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; }
+
+/* ---------- avatars ---------- */
+.avatar { --s: 56px; width: var(--s); height: var(--s); border-radius: 50%; display: inline-grid; place-items: center; overflow: hidden; flex: none; background: var(--panel2); font-weight: 800; color: #fff; font-size: calc(var(--s) * .38); user-select: none; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.ini { background: hsl(var(--h) 52% 42%); }
+.avatar.xs { --s: 32px; } .avatar.s { --s: 44px; } .avatar.m { --s: 76px; }
+.avatar.xl { --s: clamp(110px, 30cqw, 210px); }
+
+/* ---------- setup ---------- */
+.setup { max-width: 780px; margin: 0 auto; }
+.sub { color: var(--muted); margin-bottom: 22px; }
+.add { display: flex; gap: 10px; margin-bottom: 16px; }
+.add input { flex: 1; }
+.people { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 8px; }
+.person { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; padding: 8px 12px 8px 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel2); }
+.person.away .avatar, .person.away .name-input { opacity: .5; }
+.name-input { background: transparent; border-color: transparent; font-weight: 600; font-size: 1.05rem; width: 100%; }
+.name-input:hover, .name-input:focus { border-color: var(--line); background: var(--panel); }
+.avatar-btn { border: 0; background: none; padding: 0; border-radius: 50%; position: relative; }
+.avatar-btn .cam { position: absolute; right: -3px; bottom: -3px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 11px; border: 2px solid var(--panel2); }
+.here { display: flex; align-items: center; gap: 8px; font-size: .92rem; color: var(--muted); white-space: nowrap; cursor: pointer; }
+.row-actions { display: flex; align-items: center; gap: 2px; }
+.icon-btn { border: 0; background: none; color: var(--muted); width: 34px; height: 34px; border-radius: 10px; font-size: 1.05rem; }
+.icon-btn:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.empty { text-align: center; padding: 26px 10px; border: 2px dashed var(--line); border-radius: 18px; margin-bottom: 22px; color: var(--muted); }
+.empty .btn { margin-top: 12px; }
+.set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 16px 0; border-top: 1px solid var(--line); }
+.set-row > strong { min-width: 150px; }
+details { border-top: 1px solid var(--line); padding: 14px 0; }
+summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+.opts { display: grid; gap: 12px; padding-top: 14px; }
+.opts label { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.backup { border-top: 1px solid var(--line); padding: 16px 0; display: grid; gap: 10px; }
+.backup .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.start-bar { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: center; }
+.foot { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 26px; }
+
+/* ---------- huddle ---------- */
+.huddle { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .huddle { grid-template-columns: 1fr; } }
+.stage {
+  container-type: inline-size; position: relative; overflow: hidden;
+  min-height: 600px; padding: 28px; border-radius: 28px;
+  background: var(--panel); border: 3px solid var(--line); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center;
+  transition: background .4s, border-color .4s;
+}
+.stage[data-level=ready] { border-color: var(--accent); }
+.stage[data-level=ok] { border-color: color-mix(in srgb, var(--good) 70%, var(--line)); }
+.stage[data-level=warn] { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 11%, var(--panel)); }
+.stage[data-level=over] { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 17%, var(--panel)); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 transparent, var(--shadow); } 50% { box-shadow: 0 0 70px 4px color-mix(in srgb, var(--bad) 40%, transparent), var(--shadow); } }
+
+.reel { --rowh: 116px; position: relative; width: min(100%, 540px); height: calc(var(--rowh) * 3); border-radius: 26px; background: var(--panel2); border: 3px solid var(--line); overflow: hidden; box-shadow: inset 0 0 40px rgba(0, 0, 0, .22); }
+.reel::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(to bottom, var(--panel2) 0, transparent 34%, transparent 66%, var(--panel2) 100%); opacity: .93; }
+.reel::after { content: ""; position: absolute; left: 0; right: 0; top: var(--rowh); height: var(--rowh); z-index: 3; pointer-events: none; border-top: 3px solid var(--accent); border-bottom: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.pt { position: absolute; top: calc(var(--rowh) * 1.5 - 13px); width: 0; height: 0; border: 13px solid transparent; z-index: 4; }
+.pt.l { left: 0; border-left-color: var(--accent); border-right-width: 0; }
+.pt.r { right: 0; border-right-color: var(--accent); border-left-width: 0; }
+.reel-track { will-change: transform; }
+.reel-row { height: var(--rowh); display: flex; align-items: center; gap: 22px; padding: 0 34px; font-size: clamp(24px, 6cqw, 40px); font-weight: 700; text-align: left; }
+.reel-row .rname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reel-row.hit { animation: pop .55s ease-out; background: color-mix(in srgb, var(--accent) 20%, transparent); }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.07); } 100% { transform: scale(1); } }
+.spin-btn { width: min(100%, 380px); padding: 18px 30px; font-size: 2rem; font-weight: 800; letter-spacing: .16em; border-radius: 20px; box-shadow: 0 8px 0 color-mix(in srgb, var(--accent) 55%, #000); }
+.spin-btn:active { transform: translateY(5px); box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 55%, #000); }
+.hint { color: var(--muted); font-size: .92rem; }
+
+.who { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 100%; }
+.who .avatar { border: 6px solid var(--line); transition: border-color .4s; }
+.stage[data-level=ready] .who .avatar { border-color: var(--accent); }
+.stage[data-level=ok] .who .avatar { border-color: var(--good); }
+.stage[data-level=warn] .who .avatar { border-color: var(--warn); }
+.stage[data-level=over] .who .avatar { border-color: var(--bad); }
+.wname { font-size: clamp(30px, 8cqw, 58px); font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+.tag { display: inline-block; padding: 4px 16px; border-radius: 999px; background: var(--panel2); color: var(--muted); font-weight: 700; font-size: 1rem; letter-spacing: .04em; text-transform: uppercase; }
+.stage[data-level=ok] .tag { color: var(--good); } .stage[data-level=warn] .tag { color: var(--warn); }
+.stage[data-level=over] .tag { background: var(--bad); color: #fff; }
+.clock { font-size: clamp(64px, 24cqw, 210px); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1; }
+.stage[data-level=ok] .clock { color: var(--good); } .stage[data-level=warn] .clock { color: var(--warn); } .stage[data-level=over] .clock { color: var(--bad); }
+.stage.paused .clock { opacity: .55; }
+.bar { width: min(100%, 640px); height: 14px; border-radius: 999px; background: var(--panel2); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 999px; transition: width .12s linear, background .4s; }
+.stage[data-level=ok] .bar i { background: var(--good); } .stage[data-level=warn] .bar i { background: var(--warn); } .stage[data-level=over] .bar i { background: var(--bad); }
+.actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+.all-done { display: grid; gap: 16px; justify-items: center; }
+.all-done .emoji { font-size: 5rem; line-height: 1; }
+.all-done h2 { margin: 0; font-size: 2.2rem; }
+
+.side { display: flex; flex-direction: column; gap: 14px; }
+.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.meta .lbl { display: block; color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
+.meta b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.list li { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.list .lname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.list .ltime { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+
+/* ---------- summary ---------- */
+.summary { max-width: 780px; margin: 0 auto; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+.stat { background: var(--panel2); border-radius: 16px; padding: 14px 16px; }
+.stat b { display: block; font-size: 1.9rem; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: .85rem; }
+.results { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 8px; }
+.res { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 12px 16px; border-radius: 14px; background: var(--panel2); border: 1px solid transparent; }
+.res.over { border-color: color-mix(in srgb, var(--bad) 60%, transparent); }
+.res .rname { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res .rtime { font-variant-numeric: tabular-nums; }
+.res .rtime small { color: var(--muted); }
+.badge { padding: 3px 12px; border-radius: 999px; font-size: .82rem; font-weight: 700; background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); min-width: 86px; text-align: center; }
+.badge.over { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.note { color: var(--muted); margin-bottom: 8px; }
+.summary .actions { justify-content: flex-start; margin-top: 22px; }
+
+/* ---------- dialog & toast ---------- */
+dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 20px; padding: 24px; max-width: min(440px, 92vw); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(5, 8, 18, .6); }
+dialog p { margin-bottom: 20px; font-size: 1.05rem; }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 12px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 20; max-width: 90vw; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 600px) {
+  .app { padding: 10px 12px 30px; }
+  .panel { padding: 18px; }
+  .person { grid-template-columns: auto 1fr auto; }
+  .person .here { grid-column: 2 / 3; }
+  .stats { grid-template-columns: 1fr; }
+  .res { grid-template-columns: 1fr auto; } .res .badge { grid-column: 1 / -1; }
+  .stage { padding: 18px; min-height: 520px; }
+  .reel { --rowh: 96px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="app"></div>
+  <p class="foot">Runs entirely in your browser &mdash; names and photos never leave this computer.</p>
+</div>
+
+<input type="file" id="photoInput" accept="image/*" hidden>
+<input type="file" id="restoreInput" accept=".json,application/json" hidden>
+<dialog id="dlg">
+  <p id="dlgMsg"></p>
+  <div class="dlg-actions">
+    <button class="btn" data-dlg="cancel">Cancel</button>
+    <button class="btn primary" data-dlg="ok" id="dlgOk">OK</button>
+  </div>
+</dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="sr" class="sr" aria-live="polite"></div>
+<noscript><p style="padding:24px">This page needs JavaScript turned on to work.</p></noscript>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   Helpers
+   ===================================================================== */
+const $ = (sel, el = document) => el.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const toInt = (v, d) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? n : d; };
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const randInt = n => { const a = new Uint32Array(1); crypto.getRandomValues(a); return Math.floor(a[0] / 4294967296 * n); };
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmtSecs = s => { const a = Math.abs(Math.round(s)); return Math.floor(a / 60) + ':' + String(a % 60).padStart(2, '0'); };
+// Countdown display. ceil() makes it read 0:00 at the instant time is up, then -0:01 after a full second over.
+const fmtClock = ms => { const s = Math.ceil(ms / 1000); return (s < 0 ? '−' : '') + fmtSecs(s); };
+const initials = name => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  const first = Array.from(parts[0])[0];
+  const last = parts.length > 1 ? Array.from(parts[parts.length - 1])[0] : '';
+  return (first + last).toUpperCase();
+};
+const hue = name => { let h = 0; for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0; return h % 360; };
+const avatar = (p, size) => p.photo
+  ? `<span class="avatar ${size}"><img src="${p.photo}" alt=""></span>`
+  : `<span class="avatar ${size} ini" style="--h:${hue(p.name)}">${esc(initials(p.name))}</span>`;
+
+/* =====================================================================
+   Data (saved in this browser only)
+   ===================================================================== */
+const KEY = 'huddle-timer/v1';
+const SKEY = 'huddle-timer/session/v1';
+const DEFAULTS = { seconds: 120, warnSec: 30, sound: true, autoStart: false };
+const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+const idOk = v => typeof v === 'string' && /^[\w-]{1,40}$/.test(v);
+
+function cleanData(raw) {
+  const out = { people: [], settings: { ...DEFAULTS } };
+  if (!raw || typeof raw !== 'object') return out;
+  const seen = new Set();
+  for (const p of (Array.isArray(raw.people) ? raw.people : []).slice(0, 200)) {
+    if (!p || typeof p !== 'object') continue;
+    const name = String(p.name ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
+    if (!name) continue;
+    let id = idOk(p.id) ? p.id : uid();
+    if (seen.has(id)) id = uid();
+    seen.add(id);
+    const photo = typeof p.photo === 'string' && p.photo.length < 400000 && PHOTO_RE.test(p.photo) ? p.photo : null;
+    out.people.push({ id, name, photo, present: p.present !== false });
+  }
+  const s = raw.settings && typeof raw.settings === 'object' ? raw.settings : {};
+  out.settings.seconds = clamp(toInt(s.seconds, DEFAULTS.seconds), 5, 3600);
+  out.settings.warnSec = clamp(toInt(s.warnSec, DEFAULTS.warnSec), 0, 600);
+  out.settings.sound = s.sound !== false;
+  out.settings.autoStart = s.autoStart === true;
+  return out;
+}
+
+function sanitizeHuddle(h) {
+  if (!h || typeof h !== 'object' || !Number.isFinite(h.startedAt) || !Number.isFinite(h.durationSec)) return null;
+  const str = (v, n = 60) => String(v ?? '').slice(0, n);
+  const num = (v, d = 0) => Number.isFinite(v) ? v : d;
+  const arr = v => Array.isArray(v) ? v.slice(0, 300) : [];
+  const out = {
+    startedAt: h.startedAt,
+    endedAt: Number.isFinite(h.endedAt) ? h.endedAt : null,
+    durationSec: clamp(h.durationSec, 5, 3600),
+    warnSec: clamp(num(h.warnSec, 30), 0, 600),
+    queue: arr(h.queue).filter(idOk),
+    log: arr(h.log).filter(r => r && idOk(r.id)).map(r => ({ id: r.id, name: str(r.name), allotted: num(r.allotted), used: num(r.used) })),
+    notHere: arr(h.notHere).filter(r => r && idOk(r.id)).map(r => ({ id: r.id, name: str(r.name) })),
+    didntGo: arr(h.didntGo).filter(r => r && idOk(r.id)).map(r => ({ id: r.id, name: str(r.name) })),
+    current: null
+  };
+  const c = h.current;
+  if (c && idOk(c.id) && ['landed', 'running', 'paused'].includes(c.phase)) {
+    out.current = {
+      id: c.id, name: str(c.name), phase: c.phase,
+      startedAt: Number.isFinite(c.startedAt) ? c.startedAt : null,
+      pausedAt: Number.isFinite(c.pausedAt) ? c.pausedAt : null,
+      pausedMs: Math.max(0, num(c.pausedMs)), warned: !!c.warned, buzzed: !!c.buzzed
+    };
+    if (out.current.phase !== 'landed' && !out.current.startedAt) out.current.phase = 'landed';
+    if (out.current.phase === 'paused' && !out.current.pausedAt) out.current.phase = 'running';
+  }
+  return out;
+}
+
+const ui = { spinning: false, storageOk: true, photoFor: null, reelIdle: 0 };
+
+function loadData() {
+  try { const raw = localStorage.getItem(KEY); if (raw) return cleanData(JSON.parse(raw)); } catch (e) { ui.storageOk = false; }
+  return cleanData(null);
+}
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SKEY); if (!raw) return null;
+    const s = JSON.parse(raw);
+    const huddle = sanitizeHuddle(s && s.huddle);
+    if (!huddle || Date.now() - huddle.startedAt > 12 * 3600 * 1000) return null;   // ignore stale huddles
+    return { huddle, screen: s.screen === 'summary' && huddle.endedAt ? 'summary' : 'huddle' };
+  } catch (e) { return null; }
+}
+
+const state = { data: loadData(), screen: 'setup', huddle: null };
+
+function saveData() {
+  try { localStorage.setItem(KEY, JSON.stringify(state.data)); ui.storageOk = true; }
+  catch (e) { ui.storageOk = false; toast("Couldn't save — your browser may be blocking storage."); }
+}
+function saveSession() {
+  try {
+    if (state.huddle) localStorage.setItem(SKEY, JSON.stringify({ screen: state.screen === 'summary' ? 'summary' : 'huddle', huddle: state.huddle }));
+    else localStorage.removeItem(SKEY);
+  } catch (e) { /* the huddle still works; it just can't be resumed after a refresh */ }
+}
+
+const person = id => state.data.people.find(p => p.id === id);
+const queuePeople = () => (state.huddle ? state.huddle.queue : []).map(person).filter(Boolean);
+
+/* =====================================================================
+   Sound (soft beeps made with the Web Audio API; nothing to download)
+   ===================================================================== */
+let actx = null;
+function ensureAudio() {
+  if (!state.data.settings.sound) return null;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  } catch (e) { return null; }
+}
+function tone(freq, start, dur, vol = .08, type = 'sine') {
+  const c = ensureAudio(); if (!c) return;
+  const t0 = c.currentTime + start, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + .01);
+  g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .03);
+}
+const SOUNDS = {
+  tick() { tone(1500, 0, .03, .02, 'square'); },
+  chime() { tone(660, 0, .35, .09); tone(990, .13, .55, .08); },
+  warn() { tone(880, 0, .25, .09); },
+  timesUp() { tone(440, 0, .45, .12, 'triangle'); tone(330, .38, .8, .12, 'triangle'); }
+};
+const sound = name => { if (state.data.settings.sound) { try { SOUNDS[name](); } catch (e) { /* ignore */ } } };
+
+/* Keep the screen awake during a huddle */
+let wakeLock = null;
+async function holdAwake(on) {
+  try {
+    if (on && 'wakeLock' in navigator && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch (e) { /* not supported or denied - fine */ }
+}
+
+/* =====================================================================
+   UI bits: toast, confirm dialog
+   ===================================================================== */
+let toastTimer = 0;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+const dlg = $('#dlg');
+function ask(msg, okLabel = 'OK') {
+  return new Promise(resolve => {
+    $('#dlgMsg').textContent = msg; $('#dlgOk').textContent = okLabel; dlg.returnValue = 'cancel';
+    dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true });
+    dlg.showModal();
+  });
+}
+dlg.addEventListener('click', e => { const b = e.target.closest('[data-dlg]'); if (b) dlg.close(b.dataset.dlg); });
+
+/* =====================================================================
+   Timer maths (timestamps, not counters, so it stays accurate even if the tab is throttled)
+   ===================================================================== */
+function elapsedMs(cur, now = Date.now()) {
+  if (!cur.startedAt) return 0;
+  const end = cur.phase === 'paused' ? cur.pausedAt : now;
+  return Math.max(0, end - cur.startedAt - cur.pausedMs);
+}
+function levelOf(h, cur) {
+  if (!cur) return 'idle';
+  if (cur.phase === 'landed') return 'ready';
+  const rem = h.durationSec * 1000 - elapsedMs(cur);
+  if (rem <= 0) return 'over';
+  const warn = Math.min(h.warnSec, Math.floor(h.durationSec / 2));
+  return warn > 0 && rem <= warn * 1000 ? 'warn' : 'ok';
+}
+const TAGS = { ready: "You're up!", ok: 'Speaking', warn: 'Almost out of time', over: 'Over time' };
+
+function tick() {
+  const h = state.huddle;
+  if (state.screen !== 'huddle' || !h) return;
+  const hc = $('#huddleClock'); if (hc) hc.textContent = fmtSecs((Date.now() - h.startedAt) / 1000);
+  const cur = h.current, stage = $('#stage'), clock = $('#clock');
+  if (!cur || !stage || !clock) { if (document.title !== 'Huddle Timer') document.title = 'Huddle Timer'; return; }
+
+  const total = h.durationSec * 1000, rem = total - elapsedMs(cur), level = levelOf(h, cur);
+  const text = cur.phase === 'landed' ? fmtSecs(h.durationSec) : fmtClock(rem);
+  if (clock.textContent !== text) clock.textContent = text;
+  if (stage.dataset.level !== level) stage.dataset.level = level;
+  stage.classList.toggle('paused', cur.phase === 'paused');
+  const tag = $('#tag'), tagText = cur.phase === 'paused' ? 'Paused' : TAGS[level];
+  if (tag && tag.textContent !== tagText) tag.textContent = tagText;
+  const fill = $('#barFill');
+  if (fill) fill.style.width = (cur.phase === 'landed' || level === 'over' ? 100 : clamp(rem / total, 0, 1) * 100) + '%';
+  document.title = `${text} · ${cur.name} – Huddle Timer`;
+
+  if (cur.phase === 'running') {
+    if (level === 'warn' && !cur.warned) { cur.warned = true; saveSession(); sound('warn'); }
+    if (level === 'over' && !cur.buzzed) { cur.buzzed = cur.warned = true; saveSession(); sound('timesUp'); }
+  }
+}
+
+/* =====================================================================
+   Rendering
+   ===================================================================== */
+function headerHTML() {
+  let right = '';
+  if (state.screen === 'huddle') right = `<button class="btn" data-action="goSetup">Setup</button><button class="btn danger" data-action="endHuddle">End huddle</button>`;
+  else if (state.screen === 'setup' && state.huddle && !state.huddle.endedAt) right = `<button class="btn primary" data-action="backToHuddle">Back to huddle</button>`;
+  return `<header class="top"><div class="brand"><span class="logo" aria-hidden="true">⏱</span>Huddle</div><div class="top-actions">${right}</div></header>`;
+}
+
+function startLabel() {
+  const n = state.data.people.filter(p => p.present).length;
+  return n ? `Start huddle (${n} ${n === 1 ? 'person' : 'people'})` : 'Add at least one person';
+}
+
+function setupHTML() {
+  const { people, settings } = state.data;
+  const mins = Math.floor(settings.seconds / 60), secs = settings.seconds % 60;
+  const inProgress = state.huddle && !state.huddle.endedAt;
+  const rows = people.map(p => `
+    <li class="person ${p.present ? '' : 'away'}" data-id="${p.id}">
+      <button class="avatar-btn" data-action="photo" title="Click to add or change the photo (or drop a picture here)" aria-label="Change photo for ${esc(p.name)}">${avatar(p, 's')}<span class="cam" aria-hidden="true">📷</span></button>
+      <input class="name-input" type="text" value="${esc(p.name)}" maxlength="60" data-field="name" aria-label="Name">
+      <label class="here"><input type="checkbox" data-field="present" ${p.present ? 'checked' : ''}> Here today</label>
+      <span class="row-actions">
+        ${p.photo ? `<button class="btn link" data-action="removePhoto">remove photo</button>` : ''}
+        <button class="icon-btn" data-action="removePerson" aria-label="Remove ${esc(p.name)}" title="Remove from the list">✕</button>
+      </span>
+    </li>`).join('');
+  return `
+  <main class="panel setup">
+    ${ui.storageOk ? '' : `<div class="banner">Your browser isn't letting this page save anything (a private window can do that), so your list won't be remembered next time.</div>`}
+    ${inProgress ? `<div class="banner">A huddle is still in progress. <button class="btn small" data-action="backToHuddle">Back to huddle</button></div>` : ''}
+    <h1>Who's in today's huddle?</h1>
+    <p class="sub">Add your team, choose how long each person gets, then start. Your list is remembered next time.</p>
+    <form id="addForm" class="add" autocomplete="off">
+      <input id="newName" type="text" maxlength="400" placeholder="Type a name and press Enter (or paste several, separated by commas)" aria-label="Add a person">
+      <button class="btn primary" type="submit">Add</button>
+    </form>
+    ${people.length ? `<ul class="people">${rows}</ul>` : `<div class="empty"><p>No one on the list yet.</p><button class="btn" data-action="sample">Add a few sample names to try it out</button></div>`}
+    <div class="set-row">
+      <strong>Time per person</strong>
+      <input id="minInput" type="number" min="0" max="60" value="${mins}" data-field="time" aria-label="Minutes"> <span>min</span>
+      <input id="secInput" type="number" min="0" max="59" value="${secs}" data-field="time" aria-label="Seconds"> <span>sec</span>
+    </div>
+    <details>
+      <summary>More options</summary>
+      <div class="opts">
+        <label><input type="checkbox" data-field="sound" ${settings.sound ? 'checked' : ''}> Play sounds (spin ticks, a beep when time is almost up, and a tone when it runs out)</label>
+        <label><input type="checkbox" data-field="autoStart" ${settings.autoStart ? 'checked' : ''}> Start the timer automatically after the spin</label>
+        <label>Turn yellow when <input type="number" min="0" max="600" value="${settings.warnSec}" data-field="warnSec" aria-label="Warning seconds"> seconds are left</label>
+      </div>
+    </details>
+    <div class="backup">
+      <p class="muted">Your list and photos are saved in this browser on this computer. Save a backup file to move them to another computer, or in case the browser's data gets cleared.</p>
+      <div class="btns"><button class="btn" data-action="saveBackup">Save backup file</button><button class="btn" data-action="restoreBackup">Restore from backup</button></div>
+    </div>
+    <div class="start-bar"><button id="startBtn" class="btn primary big" data-action="startHuddle" ${people.some(p => p.present) ? '' : 'disabled'}>${startLabel()}</button></div>
+  </main>`;
+}
+
+const reelRow = p => `<div class="reel-row">${avatar(p, 'm')}<span class="rname">${esc(p.name)}</span></div>`;
+
+function stageHTML(h) {
+  const cur = h.current;
+  if (!cur) {
+    const pool = queuePeople();
+    if (!pool.length) {
+      return `<section class="stage" id="stage" data-level="idle"><div class="all-done"><div class="emoji" aria-hidden="true">🎉</div><h2>That's everyone!</h2><button class="btn primary big" data-action="finish">See the summary</button></div></section>`;
+    }
+    const n = pool.length, i = ui.reelIdle = randInt(n);
+    const rows = [pool[(i - 1 + n) % n], pool[i], pool[(i + 1) % n]];
+    return `<section class="stage" id="stage" data-level="idle">
+      <div class="reel" aria-hidden="true"><div class="reel-track" id="reelTrack">${rows.map(reelRow).join('')}</div><i class="pt l"></i><i class="pt r"></i></div>
+      <button class="btn primary spin-btn" data-action="spin">SPIN</button>
+      <p class="hint">${n === 1 ? 'Last person!' : n + ' still to go'} &middot; or press Space</p>
+    </section>`;
+  }
+  const p = person(cur.id) || { name: cur.name, photo: null };
+  let buttons;
+  if (cur.phase === 'landed') buttons = `<button class="btn primary big" data-action="startTimer">▶ Start timer <kbd>Space</kbd></button><button class="btn big" data-action="skipTurn">Not here – skip</button>`;
+  else if (cur.phase === 'running') buttons = `<button class="btn big" data-action="togglePause">⏸ Pause</button><button class="btn primary big" data-action="doneTurn">Done – next person <kbd>Enter</kbd></button>`;
+  else buttons = `<button class="btn primary big" data-action="togglePause">▶ Resume</button><button class="btn big" data-action="doneTurn">Done – next person</button>`;
+  const level = levelOf(h, cur);
+  return `<section class="stage ${cur.phase === 'paused' ? 'paused' : ''}" id="stage" data-level="${level}">
+    <div class="who">${avatar(p, 'xl')}<div class="wname">${esc(cur.name)}</div><span class="tag" id="tag">${cur.phase === 'paused' ? 'Paused' : TAGS[level]}</span></div>
+    <div class="clock" id="clock" role="timer" aria-live="off">${fmtSecs(h.durationSec)}</div>
+    <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+    <div class="actions">${buttons}</div>
+  </section>`;
+}
+
+function sideHTML(h) {
+  const pool = queuePeople();
+  const done = h.log.map(r => {
+    const diff = r.used - r.allotted;
+    return `<li><span class="lname">${esc(r.name)}</span><span class="ltime ${diff > 0 ? 'bad' : 'good'}">${fmtSecs(r.used)}${diff > 0 ? ` (+${fmtSecs(diff)})` : ''}</span></li>`;
+  }).join('');
+  return `<aside class="side">
+    <div class="card meta"><div><span class="lbl">Huddle time</span><b id="huddleClock">0:00</b></div><div><span class="lbl">Per person</span><b>${fmtSecs(h.durationSec)}</b></div></div>
+    <div class="card"><h3>Still to go (${pool.length})</h3>${pool.length ? `<ul class="list">${pool.map(p => `<li>${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span></li>`).join('')}</ul>` : '<p class="muted">No one left.</p>'}</div>
+    <div class="card"><h3>Done (${h.log.length})</h3>${done ? `<ul class="list">${done}</ul>` : '<p class="muted">No one yet.</p>'}</div>
+    ${h.notHere.length ? `<div class="card"><h3>Not here (${h.notHere.length})</h3><ul class="list">${h.notHere.map(n => `<li data-id="${n.id}"><span class="lname">${esc(n.name)}</span><button class="btn small" data-action="addBack">Add back</button></li>`).join('')}</ul></div>` : ''}
+  </aside>`;
+}
+
+const huddleHTML = h => `<div class="huddle">${stageHTML(h)}${sideHTML(h)}</div>`;
+
+function summarize(h) {
+  const used = h.log.map(r => r.used);
+  return {
+    length: Math.round(((h.endedAt || Date.now()) - h.startedAt) / 1000),
+    avg: used.length ? Math.round(used.reduce((a, b) => a + b, 0) / used.length) : 0,
+    over: h.log.filter(r => r.used > r.allotted),
+    date: new Date(h.startedAt).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+  };
+}
+
+function summaryHTML(h) {
+  const s = summarize(h);
+  const rows = h.log.map(r => {
+    const diff = r.used - r.allotted;
+    return `<li class="res ${diff > 0 ? 'over' : ''}"><span class="rname">${esc(r.name)}</span><span class="rtime">${fmtSecs(r.used)} <small>of ${fmtSecs(r.allotted)}</small></span><span class="badge ${diff > 0 ? 'over' : ''}">${diff > 0 ? '+' + fmtSecs(diff) + ' over' : 'On time'}</span></li>`;
+  }).join('');
+  const names = list => list.map(n => esc(n.name)).join(', ');
+  return `<main class="panel summary">
+    <h1>Huddle complete</h1><p class="sub">${esc(s.date)}</p>
+    <div class="stats">
+      <div class="stat"><b>${fmtSecs(s.length)}</b><span>Total huddle time</span></div>
+      <div class="stat"><b>${fmtSecs(s.avg)}</b><span>Average per person</span></div>
+      <div class="stat"><b class="${s.over.length ? 'bad' : 'good'}">${s.over.length}</b><span>${s.over.length === 1 ? 'person' : 'people'} went over</span></div>
+    </div>
+    ${rows ? `<ul class="results">${rows}</ul>` : '<p class="note">No one took a turn.</p>'}
+    ${h.didntGo.length ? `<p class="note"><strong>Didn't get a turn:</strong> ${names(h.didntGo)}</p>` : ''}
+    ${h.notHere.length ? `<p class="note"><strong>Not here:</strong> ${names(h.notHere)}</p>` : ''}
+    <div class="actions"><button class="btn big" data-action="copySummary">Copy summary</button><button class="btn primary big" data-action="newHuddle">Start a new huddle</button></div>
+  </main>`;
+}
+
+function render() {
+  let body;
+  if (state.screen === 'huddle' && state.huddle) body = huddleHTML(state.huddle);
+  else if (state.screen === 'summary' && state.huddle) body = summaryHTML(state.huddle);
+  else { state.screen = 'setup'; body = setupHTML(); }
+  $('#app').innerHTML = headerHTML() + body;
+  holdAwake(state.screen === 'huddle');
+  if (state.screen !== 'huddle') document.title = 'Huddle Timer';
+  tick();
+}
+
+/* =====================================================================
+   The slot-machine reel
+   ===================================================================== */
+function runReel(pool, winnerIdx) {
+  return new Promise(resolve => {
+    const track = $('#reelTrack');
+    if (!track) return resolve();
+    const n = pool.length, i0 = ui.reelIdle % n;
+    // strip[j] = pool[(i0 + j) mod n]; the winner must land at index T, at least ~30 rows from the start.
+    const T = n * Math.ceil(30 / n) + (((winnerIdx - i0) % n) + n) % n;
+    const items = [];
+    for (let j = -1; j <= T + 1; j++) items.push(pool[(((i0 + j) % n) + n) % n]);
+    track.style.transform = 'translateY(0)';
+    track.innerHTML = items.map(reelRow).join('');
+    const total = items.length, dur = reduced() ? 900 : 3800 + randInt(800), t0 = performance.now();
+    let lastRow = 0, lastTick = 0, finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      track.style.transform = `translateY(${(-T / total * 100).toFixed(4)}%)`;
+      track.style.filter = '';
+      const hit = track.children[T + 1]; if (hit) hit.classList.add('hit');
+      setTimeout(resolve, 600);
+    };
+    const frame = now => {
+      if (finished) return;
+      const t = clamp((now - t0) / dur, 0, 1), pos = T * (1 - Math.pow(1 - t, 4));   // ease-out: fast, then slows to a stop
+      track.style.transform = `translateY(${(-pos / total * 100).toFixed(4)}%)`;
+      if (!reduced()) {
+        const speed = T * 4 * Math.pow(1 - t, 3) / (dur / 1000), b = Math.min(3.5, speed / 14);
+        track.style.filter = b > .35 ? `blur(${b.toFixed(2)}px)` : '';
+      }
+      const row = Math.round(pos);
+      if (row !== lastRow) { lastRow = row; if (now - lastTick > 40) { lastTick = now; sound('tick'); } }
+      if (t < 1) requestAnimationFrame(frame); else finish();
+    };
+    requestAnimationFrame(frame);
+    setTimeout(finish, dur + 1000);   // safety net: browsers pause animation frames in background tabs
+  });
+}
+
+/* =====================================================================
+   Huddle actions
+   ===================================================================== */
+async function spin() {
+  const h = state.huddle;
+  if (!h || h.current || ui.spinning) return;
+  const pool = queuePeople();
+  if (!pool.length) return;
+  ensureAudio();
+  const idx = randInt(pool.length), winner = pool[idx];
+  ui.spinning = true;
+  h.queue = h.queue.filter(id => id !== winner.id);          // decided up front; the animation is just for show
+  h.current = { id: winner.id, name: winner.name, phase: 'landed', startedAt: null, pausedAt: null, pausedMs: 0, warned: false, buzzed: false };
+  saveSession();
+  await runReel(pool, idx);
+  ui.spinning = false;
+  $('#sr').textContent = `${winner.name} is up`;
+  sound('chime');
+  if (state.data.settings.autoStart) startTimer(); else render();
+}
+
+function startTimer() {
+  const cur = state.huddle && state.huddle.current;
+  if (!cur || cur.phase !== 'landed') return;
+  ensureAudio();
+  Object.assign(cur, { phase: 'running', startedAt: Date.now(), pausedAt: null, pausedMs: 0, warned: false, buzzed: false });
+  saveSession(); render();
+}
+
+function togglePause() {
+  const cur = state.huddle && state.huddle.current;
+  if (!cur || cur.phase === 'landed') return;
+  const now = Date.now();
+  if (cur.phase === 'running') { cur.phase = 'paused'; cur.pausedAt = now; }
+  else { cur.pausedMs += now - cur.pausedAt; cur.pausedAt = null; cur.phase = 'running'; }
+  saveSession(); render();
+}
+
+function logCurrent(h) {
+  const cur = h.current;
+  h.log.push({ id: cur.id, name: cur.name, allotted: h.durationSec, used: Math.round(elapsedMs(cur) / 1000) });
+  h.current = null;
+}
+
+function doneTurn() {
+  const h = state.huddle;
+  if (!h || !h.current || h.current.phase === 'landed') return;
+  logCurrent(h);
+  document.title = 'Huddle Timer';
+  saveSession(); render();
+}
+
+function skipTurn() {
+  const h = state.huddle;
+  if (!h || !h.current || h.current.phase !== 'landed') return;
+  h.notHere.push({ id: h.current.id, name: h.current.name });
+  h.current = null;
+  saveSession(); render();
+}
+
+function finishHuddle() {
+  const h = state.huddle; if (!h) return;
+  const pending = [];
+  if (h.current) {
+    if (h.current.phase === 'landed') pending.push({ id: h.current.id, name: h.current.name });
+    else logCurrent(h);
+    h.current = null;
+  }
+  h.queue.map(person).filter(Boolean).forEach(p => pending.push({ id: p.id, name: p.name }));
+  h.didntGo = pending; h.queue = [];
+  h.endedAt = Date.now();
+  state.screen = 'summary';
+  saveSession(); render();
+}
+
+/* =====================================================================
+   Setup actions
+   ===================================================================== */
+function addPeople(text) {
+  const names = text.split(/[,\n;]+/).map(s => s.trim().replace(/\s+/g, ' ').slice(0, 60)).filter(Boolean);
+  const room = Math.max(0, 100 - state.data.people.length);
+  names.slice(0, room).forEach(name => state.data.people.push({ id: uid(), name, photo: null, present: true }));
+  if (names.length > room) toast('The list is limited to 100 people.');
+  if (names.length) { saveData(); render(); const i = $('#newName'); if (i) i.focus(); }
+}
+
+async function fileToThumb(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('decode')); i.src = url; });
+    const S = 256, w = img.naturalWidth, h = img.naturalHeight, side = Math.min(w, h);
+    const sx = (w - side) / 2, sy = h > w ? (h - side) * .2 : (h - side) / 2;   // portrait photos: keep the top (faces)
+    const c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, S, S);
+    g.drawImage(img, sx, sy, side, side, 0, 0, S, S);
+    return c.toDataURL('image/jpeg', .86);
+  } finally { URL.revokeObjectURL(url); }
+}
+async function setPhoto(id, file) {
+  const p = person(id); if (!p || !file) return;
+  try { p.photo = await fileToThumb(file); saveData(); render(); toast(`Photo added for ${p.name}`); }
+  catch (e) { toast("Sorry, that picture couldn't be read. Try a JPG or PNG."); }
+}
+
+function saveBackup() {
+  const payload = { app: 'huddle-timer', version: 1, savedAt: new Date().toISOString(), people: state.data.people, settings: state.data.settings };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+  a.download = `huddle-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast('Backup saved to your Downloads folder');
+}
+
+async function restoreFrom(file) {
+  try {
+    if (file.size > 25 * 1024 * 1024) throw new Error('big');
+    const raw = JSON.parse(await file.text());
+    if (!raw || raw.app !== 'huddle-timer') throw new Error('not ours');
+    const data = cleanData(raw);
+    if (!await ask(`Replace your current list with the ${data.people.length} ${data.people.length === 1 ? 'person' : 'people'} in this backup?`, 'Restore')) return;
+    state.data = data; saveData(); render(); toast('Backup restored');
+  } catch (e) { toast("That file doesn't look like a Huddle Timer backup."); }
+}
+
+/* =====================================================================
+   Event wiring
+   ===================================================================== */
+const actions = {
+  spin, startTimer, togglePause, doneTurn, skipTurn,
+  finish: finishHuddle,
+  goSetup() { state.screen = 'setup'; render(); },
+  backToHuddle() { state.screen = 'huddle'; render(); },
+  async endHuddle() {
+    const h = state.huddle;
+    if ((h.current || h.queue.length) && !await ask("End the huddle now? Anyone who hasn't gone yet will be listed as not getting a turn.", 'End huddle')) return;
+    finishHuddle();
+  },
+  addBack(id) {
+    const h = state.huddle, n = h.notHere.find(x => x.id === id);
+    if (!n) return;
+    h.notHere = h.notHere.filter(x => x.id !== id);
+    if (person(id)) h.queue.push(id);
+    saveSession(); render();
+  },
+  async startHuddle() {
+    const present = state.data.people.filter(p => p.present);
+    if (!present.length) return;
+    if (state.huddle && !state.huddle.endedAt && !await ask('A huddle is already in progress. Discard it and start a new one?', 'Start new huddle')) return;
+    const s = state.data.settings;
+    state.huddle = {
+      startedAt: Date.now(), endedAt: null, durationSec: s.seconds, warnSec: s.warnSec,
+      queue: present.map(p => p.id), log: [], current: null, didntGo: [],
+      notHere: state.data.people.filter(p => !p.present).map(p => ({ id: p.id, name: p.name }))
+    };
+    state.screen = 'huddle'; saveSession(); render();
+  },
+  photo(id) { ui.photoFor = id; $('#photoInput').click(); },
+  removePhoto(id) { const p = person(id); if (p) { p.photo = null; saveData(); render(); } },
+  async removePerson(id) {
+    const p = person(id);
+    if (!p || !await ask(`Remove ${p.name} from the list?`, 'Remove')) return;
+    state.data.people = state.data.people.filter(x => x.id !== id); saveData(); render();
+  },
+  sample() { addPeople('Alex, Jordan, Sam, Taylor, Casey'); },
+  saveBackup,
+  restoreBackup() { $('#restoreInput').click(); },
+  async copySummary() {
+    const h = state.huddle, s = summarize(h);
+    const lines = [`Huddle summary – ${s.date} (${fmtSecs(s.length)} total)`];
+    h.log.forEach(r => {
+      const diff = r.used - r.allotted;
+      lines.push(`${diff > 0 ? '⚠️' : '✅'} ${r.name} – ${fmtSecs(r.used)} of ${fmtSecs(r.allotted)}${diff > 0 ? ` (+${fmtSecs(diff)} over)` : ''}`);
+    });
+    if (h.didntGo.length) lines.push(`Didn't get a turn: ${h.didntGo.map(n => n.name).join(', ')}`);
+    if (h.notHere.length) lines.push(`Not here: ${h.notHere.map(n => n.name).join(', ')}`);
+    const text = lines.join('\n');
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e2) { /* ignore */ }
+      ta.remove();
+    }
+    toast('Summary copied – paste it into Teams');
+  },
+  newHuddle() { state.huddle = null; state.screen = 'setup'; saveSession(); render(); }
+};
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el || el.disabled || ui.spinning) return;
+  if (e.detail > 0 && el.tagName === 'BUTTON') el.blur();      // so Space/Enter shortcuts keep working after a mouse click
+  const row = el.closest('[data-id]');
+  const fn = actions[el.dataset.action];
+  if (fn) fn(row ? row.dataset.id : undefined);
+});
+
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'addForm') return;
+  e.preventDefault();
+  const i = $('#newName'); addPeople(i.value); i.value = '';
+});
+
+document.addEventListener('change', e => {
+  const t = e.target, field = t.dataset && t.dataset.field;
+  if (!field) return;
+  const row = t.closest('[data-id]'), p = row && person(row.dataset.id), s = state.data.settings;
+  if (field === 'name' && p) {
+    const v = t.value.trim().replace(/\s+/g, ' ').slice(0, 60);
+    if (v) p.name = v;
+    t.value = p.name; saveData();
+  } else if (field === 'present' && p) {
+    p.present = t.checked; row.classList.toggle('away', !p.present); saveData();
+    const b = $('#startBtn'); if (b) { b.disabled = !state.data.people.some(x => x.present); b.textContent = startLabel(); }
+  } else if (field === 'time') {
+    s.seconds = clamp(toInt($('#minInput').value, 0) * 60 + toInt($('#secInput').value, 0), 5, 3600);
+    $('#minInput').value = Math.floor(s.seconds / 60); $('#secInput').value = s.seconds % 60; saveData();
+  } else if (field === 'warnSec') {
+    s.warnSec = clamp(toInt(t.value, 30), 0, 600); t.value = s.warnSec; saveData();
+  } else if (field === 'sound') { s.sound = t.checked; saveData(); }
+  else if (field === 'autoStart') { s.autoStart = t.checked; saveData(); }
+});
+
+$('#photoInput').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0], id = ui.photoFor;
+  e.target.value = ''; ui.photoFor = null;
+  if (f && id) setPhoto(id, f);
+});
+$('#restoreInput').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (f) restoreFrom(f);
+});
+
+// Drop a picture onto someone's row to set their photo (and stop the browser from opening dropped files)
+['dragover', 'drop'].forEach(type => document.addEventListener(type, e => {
+  if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+  e.preventDefault();
+  if (type === 'drop') {
+    const row = e.target.closest && e.target.closest('.person');
+    const f = Array.from(e.dataTransfer.files).find(x => x.type.startsWith('image/'));
+    if (row && f) setPhoto(row.dataset.id, f);
+  }
+}));
+
+// Keyboard: Space = spin / start / pause-resume, Enter = done
+document.addEventListener('keydown', e => {
+  if (dlg.open || e.repeat || ui.spinning || state.screen !== 'huddle' || !state.huddle) return;
+  if (e.target !== document.body) return;
+  const h = state.huddle, cur = h.current;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!cur) spin(); else if (cur.phase === 'landed') startTimer(); else togglePause();
+  } else if (e.code === 'Enter' && cur && cur.phase !== 'landed') { e.preventDefault(); doneTurn(); }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { holdAwake(state.screen === 'huddle'); tick(); }
+});
+
+/* =====================================================================
+   Go
+   ===================================================================== */
+(function boot() {
+  try { localStorage.setItem('huddle-timer/probe', '1'); localStorage.removeItem('huddle-timer/probe'); } catch (e) { ui.storageOk = false; }
+  const sess = loadSession();
+  if (sess) { state.huddle = sess.huddle; state.screen = sess.screen; }
+  render();
+  setInterval(tick, 100);
+})();
+})();
+</script>
+</body>
+</html>
