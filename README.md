@@ -87,10 +87,12 @@ Edge only). If you're using the installed app, its window moves and shrinks itse
 underneath the floating window (and follows it if you drag it), so only the floating window is visible.
 Click **Dock back** (the same icon), or close the floating window, and the app window goes straight back
 to its exact size and position. While popped out, a small status line on the hidden window says whether it
-managed to hide (handy for troubleshooting). Chrome decides where the floating window opens (a page can't
-set its position) and remembers where you last dragged it. If Chrome makes the floating window narrower
-than the app window can shrink, a sliver of the app window shows until you click anywhere inside the
-floating window once; it then widens itself to cover the app window.
+managed to hide (handy for troubleshooting). The floating window is requested at least as big as the app
+window (an installed window can't get much narrower than about 500 px), with Chrome's "use the initial
+placement" option so it doesn't reuse a smaller size from last time. Chrome decides where it opens (a page
+can't set its position), so drag it where you like and the hidden window follows. If Chrome still makes it
+narrower than the app window can shrink, a sliver shows until you click anywhere inside the floating window
+once; it then widens itself to cover the app window.
 
 Browsers don't let a page minimize or hide its own window, so this is done by tucking the strip out of
 sight rather than truly hiding it. If the strip's minimum size is larger than the floating window, a
@@ -154,8 +156,12 @@ older "spin" version (a person in a `landed` phase) are converted on load.
 - Pop-out from an installed app window (any size): the pop-out's position can't be set by the page
   (Chrome docs), so `tuck()` reads the pop-out's `screenX/Y` and `outerWidth/Height` every 250 ms and, until
   the main window matches, keeps calling `resizeTo` / `moveTo` on the *main* window to put it underneath the
-  always-on-top pop-out (so a call the browser ignores is simply retried). The pop-out is requested at least
-  as big as the main window so the main window can always fit under it; if the browser still makes it smaller
+  always-on-top pop-out (so a call the browser ignores is simply retried), every animation frame in the
+  pop-out plus a 50 ms timer, so it keeps up while you drag. The pop-out is requested at least as big as the
+  main window's outer size with `preferInitialWindowPlacement: true` (Chrome otherwise reuses the previous
+  pop-out's size and ignores ours; found from a screen recording: a ~500 px-wide strip under a ~440 px pop-out
+  can't hide, and Chrome won't let a window hang off the screen edge, so it showed as a "shadow"). The main
+  window can then always fit under it; if the browser still makes it smaller
   than the main window's minimum size, `tuck()` grows the pop-out with `pip.resizeTo` (the browser only allows
   that during a click inside the pop-out, so `tuck` also runs from the pop-out's click handler). If the
   pop-out's geometry isn't readable it does nothing and says so in the `#dbg` line. Dock back (`popIn`)

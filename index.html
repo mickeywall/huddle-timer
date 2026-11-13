@@ -1052,10 +1052,12 @@ async function popOut() {
     // Remember where this window is. If it is an installed strip, it tucks itself away underneath the pop-out (see
     // tuck) and returns here on Dock back, so only the floating window is ever visible.
     const home = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight, iw: window.innerWidth, ih: window.innerHeight };
-    // Installed app: ask for a floating window at least as big as this window is right now, so this window can always
-    // shrink or grow to fit exactly underneath it (a window can't get smaller than its own minimum size).
+    // Installed app: ask for a floating window at least as big as this window's OUTER size right now, so this window can
+    // always fit exactly underneath it (a window can't get smaller than its own minimum size, and can't hang off the
+    // screen edge). Chrome normally reuses the previous pop-out's size and ignores ours, so preferInitialWindowPlacement
+    // makes it use the size we ask for.
     const w = await window.documentPictureInPicture.requestWindow(isInstalled()
-      ? { width: Math.max(home.iw, STRIP_W), height: Math.max(home.ih, 400) }
+      ? { width: clamp(home.w + 6, 520, 700), height: clamp(home.h, 400, Math.max(400, b.h - 60)), preferInitialWindowPlacement: true }
       : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
     pip = w;
     w.document.documentElement.lang = 'en';
@@ -1069,15 +1071,18 @@ async function popOut() {
     w.addEventListener('pagehide', popIn);       // fires when the pop-out window is closed or sent back by the browser
     render();
     // Chrome decides where the pop-out goes (a page can't set its position), so an installed window hides itself instead.
-    if (isInstalled()) { popHome = home; tuckTries = 0; tuck(); tuckTimer = w.setInterval(tuck, 250); }
+    if (isInstalled()) { popHome = home; tuckTries = 0; tuck(); tuckTimer = w.setInterval(tuck, 50);   // 50 ms timer as a backup...
+      const follow = () => { if (pip === w) { tuck(); w.requestAnimationFrame(follow); } };    // ...and every frame, so the hidden window keeps up when you drag the pop-out
+      w.requestAnimationFrame(follow); }
   } catch (e) { pip = null; doc = document; toast("Couldn't open the floating window here."); }
 }
 
 // Browsers won't let a page minimize or hide its own window, so an installed strip hides by resizing and moving itself
 // to sit exactly underneath the (always-on-top) pop-out, and it follows if you drag or resize the pop-out.
-function tuck() {
+function tuck(ev) {
   if (!pip || !popHome) return;
-  const note = msg => { const d = away.querySelector('#dbg'); if (d) d.textContent = msg; };   // small status line on the strip's placeholder
+  const fromClick = !!(ev && ev.type === 'click');
+  const note = msg => { const d = away.querySelector('#dbg'); if (d && d.textContent !== msg) d.textContent = msg; };   // small status line on the strip's placeholder
   const box = (x, y, w, h) => `${Math.round(x)},${Math.round(y)} ${Math.round(w)}×${Math.round(h)}`;
   try {
     const x = pip.screenX ?? pip.screenLeft, y = pip.screenY ?? pip.screenTop;
@@ -1089,7 +1094,7 @@ function tuck() {
     tuckTries++;
     // If this window can't get as small as the pop-out (it has a minimum size), grow the pop-out instead (the browser only
     // allows that right after a click inside the pop-out, so this is also retried from its click handler).
-    if (here.w > w + 3 || here.h > h + 3) { try { pip.resizeTo(Math.max(w, here.w), Math.max(h, here.h)); } catch (e) { /* needs a click in the pop-out */ } }
+    if ((here.w > w + 3 || here.h > h + 3) && (fromClick || tuckTries <= 2)) { try { pip.resizeTo(Math.max(w, here.w), Math.max(h, here.h)); } catch (e) { /* needs a click in the pop-out */ } }
     window.resizeTo(w, h);        // the strip is an app window, so it may move and resize itself
     window.moveTo(x, y);
     note(`Hiding the strip, try ${tuckTries}: pop-out is at ${box(x, y, w, h)}, strip was at ${box(here.x, here.y, here.w, here.h)}.`);
