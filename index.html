@@ -83,7 +83,7 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .avatar.xl { --s: clamp(110px, 30cqw, 210px); }
 
 /* ---------- setup ---------- */
-.setup { max-width: 1160px; margin: 0 auto; }
+.setup { max-width: 980px; margin: 0 auto; }
 .sub { color: var(--muted); margin-bottom: 18px; }
 .add { display: flex; gap: 10px; margin-bottom: 14px; }
 .add input { flex: 1; }
@@ -117,30 +117,26 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .opts label span { min-width: 0; }
 .opts label.inline { flex-wrap: wrap; }
 .opts input[type=checkbox] { flex: none; }
-/* the bottom bar: backup buttons on the left, Start huddle on the right */
-.setup-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }
+/* the bottom bar: backup buttons and a note on the left, Start huddle on the right */
+.setup-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 14px; }
+.setup-bar .bar-note { flex: 1 1 180px; min-width: 150px; margin: 0 6px; font-size: .78rem; line-height: 1.3; }
 .setup-bar .go { margin-left: auto; padding: 12px 24px; font-size: 1.05rem; border-radius: 14px; }
 .foot { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 26px; }
 
-/* A wide window: names on the left (in as many columns as fit), the settings in a column on the right, so the Setup
-   screen uses the whole width. When the window is tall enough the page itself never scrolls: a very long name list
-   scrolls inside its own box instead. */
+/* A wide window: names on the left (two columns), the settings in a narrow column on the right. The panel is only as big
+   as its contents (a huddle is a handful of people), centered, and never stretched to fill the window. If the list is
+   ever long enough to need more height than the window has, the list scrolls inside its own box, not the page. */
 @media (min-width: 880px) {
-  .setup-grid { grid-template-columns: minmax(0, 1fr) 310px; gap: 28px; }
-  .people { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 6px; }
+  .setup-grid { grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; }
+  .people { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; }
   .person .td { display: none; }                  /* two columns of names are narrow: "Here" is enough next to the tick */
 }
-@media (min-width: 880px) and (min-height: 560px) {
-  .app.fit { height: 100vh; max-width: 1500px; display: flex; flex-direction: column; padding-top: 10px; padding-bottom: 10px; }
+@media (min-width: 880px) and (min-height: 520px) {
+  .app.fit { padding-top: 10px; padding-bottom: 6px; }
   .app.fit .top { padding: 0 0 10px; min-height: 0; }
-  .app.fit #app { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-  .app.fit .foot { flex: none; margin-top: 8px; }
-  .app.fit .setup { flex: 1 1 auto; width: 100%; max-width: 1460px; min-height: 0; display: flex; flex-direction: column; padding: 22px 26px 20px; }
-  .app.fit .setup-grid { flex: 1 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); }
-  .app.fit .s-cfg { min-height: 0; overflow-y: auto; }
-  .app.fit .people { flex: 1 1 auto; min-height: 0; overflow-y: auto; align-content: start; padding-right: 6px; }
-  .app.fit .setup-bar { flex: none; margin-top: 14px; }
-  .app.fit .people, .app.fit .s-cfg { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .app.fit .setup { padding: 20px 24px 18px; }
+  .app.fit .foot { margin-top: 10px; }
+  .app.fit .people { max-height: calc(100vh - 380px); min-height: 110px; overflow-y: auto; align-content: start; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 }
 
 /* ---------- huddle ---------- */
@@ -764,15 +760,12 @@ function setupHTML() {
             <label class="inline"><span>Turn yellow when</span><input type="number" min="0" max="600" value="${settings.warnSec}" data-field="warnSec" aria-label="Warning seconds"><span>seconds are left</span></label>
           </div>
         </section>
-        <section>
-          <h3>Backup</h3>
-          <p class="muted">Your list and photos are saved in this browser on this computer. Save a backup file to move them to another computer, or in case the browser's data gets cleared.</p>
-        </section>
       </aside>
     </div>
     <div class="setup-bar">
       <button class="btn" data-action="saveBackup">Save backup file</button>
       <button class="btn" data-action="restoreBackup">Restore from backup</button>
+      <p class="bar-note muted">Your list and photos are saved in this browser on this computer. A backup file lets you move or restore them.</p>
       <button id="startBtn" class="btn primary go" data-action="startHuddle" ${people.some(p => p.present) ? '' : 'disabled'}>${startLabel()}</button>
     </div>
   </main>`;
@@ -1284,7 +1277,7 @@ listen('keydown', e => {
 /* =====================================================================
    Windows: centered setup -> narrow side strip -> back again.
    - Installed app window (Chrome/Edge let an installed app resize and move itself). Always ONE window, in one of:
-       setup: a big centered window that fills the screen (the app opens like this); summary: a smaller centered one.
+       setup: a 1100 x 700 centered window (the app opens like this); summary: a smaller centered one.
        'dock': during a huddle, snapped to the right edge of the screen as a strip. If you drag or resize it, it
                snaps straight back as soon as you let go (a page can't truly freeze its own window).
        'card': after "Pop out": a small square window of FIXED SIZE that you can move. If you resize it, it
@@ -1418,11 +1411,12 @@ function popInPip() {
 function popOut() { if (isInstalled()) popOutCard(); else popOutPip(); }
 function popIn() { if (isInstalled() && !pip) dockSide(); else popInPip(); }
 
-// A normal window, centered. The app's launch and Setup (big = true) fill the screen's work area, up to 1600 x 1000 on a
-// very large monitor, so there is room for the whole Setup screen without scrolling; the summary gets a smaller one.
+// A normal window, centered. The app's launch and Setup (big = true) use a comfortable 1100 x 700, which fits the whole
+// Setup screen for a typical team without scrolling (smaller if the screen is); the summary gets a smaller window.
+const SETUP_W = 1100, SETUP_H = 700;
 function centerWindow(big = true) {
   const b = screenBox();
-  const w = big ? Math.min(b.w, 1600) : Math.min(980, b.w - 80), h = big ? Math.min(b.h, 1000) : Math.min(860, b.h - 80);
+  const w = big ? Math.min(SETUP_W, b.w) : Math.min(980, b.w - 80), h = big ? Math.min(SETUP_H, b.h) : Math.min(860, b.h - 80);
   if (hasScreen(b)) placeWindow(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2), w, h);
 }
 

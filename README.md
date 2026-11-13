@@ -13,8 +13,9 @@ Everything runs in the browser, and nothing is ever uploaded.
 
 1. Open the page and add everyone's name. You can paste several at once, separated by commas.
    Click a round picture to add a photo, or drag a photo from your computer onto someone's row.
-   On a wide window the names sit on the left (in as many columns as fit) and the settings on the right,
-   so the page doesn't need to scroll; only a very long name list scrolls inside its own box.
+   On a wide window the names sit on the left in two columns and the settings on the right, in a compact
+   panel that is only as big as its contents. The page itself doesn't scroll; only an unusually long name
+   list scrolls inside its own box.
 2. Set **Time per person** (for example 2 min).
 3. Untick **Here today** for anyone who is out.
 4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
@@ -65,7 +66,7 @@ list looks empty in the installed app, add the team once there, or use **Restore
 
 ## Beside Planner in a Teams meeting
 
-Setup uses a big window that fills the screen. When you press **Start huddle** the app moves into a narrow strip
+Setup uses a comfortable centered window (1100 x 700). When you press **Start huddle** the app moves into a narrow strip
 (about 360 pixels wide) on the right side of your screen, and everything (the clock, the buttons, the
 Up next list) fits in that strip. How that happens depends on how you opened it:
 
@@ -94,9 +95,9 @@ You can turn the automatic move off under Setup > More options.
   **Done** and **Not here** lists shrink first). As people finish and drop off **Up next**, it stops
   scrolling once everything fits. In a very short window the two totals (huddle time, time per person) are
   hidden so the lists keep the room.
-- **Opens big (installed app):** the installed app opens as a big window that fills the screen (on a very
-  large monitor, 1600 x 1000, centered) for Setup. Setup is always that big window; the summary after a
-  huddle is a smaller centered one.
+- **Opens centered (installed app):** the installed app opens as a centered 1100 x 700 window (smaller if
+  your screen is) for Setup. Setup is always that window; the summary after a huddle is a slightly smaller
+  centered one.
 - **Docked (the default during a huddle):** when you press Start huddle, the window resizes and snaps to the
   right edge of the screen, full height, as a strip. It is locked there: a resize is refused on the spot, and
   if you drag it away it snaps straight back as soon as you let go. (A web page can't truly freeze its own window, so letting go is when it
@@ -176,11 +177,12 @@ older "spin" version (a person in a `landed` phase) are converted on load.
 ### Setup layout
 
 From 880 px wide the Setup screen is a two-column grid (`.setup-grid`): the names (`.people`, auto-fill
-columns of at least 290 px) on the left, the settings cards (`.s-cfg`) on the right, and a bottom bar with the
-backup buttons and Start huddle. `render()` puts a `fit` class on `.app` for Setup; when the window is also
-at least 560 px tall, `.app.fit` is exactly the window height, so the page never scrolls: only `.people` (and
-the settings column in a very short window) scroll inside their own boxes. Narrower windows stack everything
-and the page scrolls normally.
+columns of at least 260 px, so two) on the left, two settings cards (`.s-cfg`) on the right, and a bottom bar
+with the backup buttons, a short note about where the list is saved, and Start huddle. The panel is at most
+980 px wide and only as tall as its contents; it is not stretched to the window (a huddle is a handful of
+people). `render()` puts a `fit` class on `.app` for Setup; when the window is at least 520 px tall,
+`.people` gets `max-height: calc(100vh - 380px)` and scrolls inside its own box, so the page itself never
+scrolls. Narrower windows stack everything and the page scrolls normally.
 
 ### Window handling (`enterStrip` / `leaveStrip`)
 
@@ -197,8 +199,8 @@ and the page scrolls normally.
   left or top edge also shifts the window). Moves fire no event, so those are caught by the watcher. `popOutCard()`
   makes the 520 x 520 card (position from `huddle-timer/float` in `localStorage`, else top-right) and adds the
   `is-card` class for the condensed layout; `dockSide()` saves the card's position and docks again. The app also
-  calls `centerWindow(big)` at launch and for Setup (the screen's work area, at most 1600 x 1000) and for the
-  summary (smaller, at most 980 x 860). This replaced earlier designs that used a Document
+  calls `centerWindow(big)` at launch and for Setup (`SETUP_W` x `SETUP_H` = 1100 x 700, or the screen's work
+  area if that is smaller) and for the summary (at most 980 x 860). This replaced earlier designs that used a Document
   Picture-in-Picture window and tried to hide the app window under it (needed clicks, retried constantly,
   flickered): don't go back to that.
 - **Normal browser tab:** the pop-out uses the Document Picture-in-Picture API (Chrome / Edge 116+, desktop; it
