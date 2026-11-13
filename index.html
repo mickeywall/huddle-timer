@@ -333,6 +333,18 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .order .oname { font-size: clamp(.98rem, 2.5vh, 1.5rem); }
   .order .num { width: clamp(24px, 3.4vh, 38px); height: clamp(24px, 3.4vh, 38px); font-size: clamp(.78rem, 1.7vh, 1.05rem); }
 }
+/* The small square window (Pop out): just the speaker, the clock, the buttons and the next few names. */
+@media (max-width: 600px) {
+  .is-card .meta, .is-card .donecard, .is-card .nothere { display: none; }
+  .is-card .upnext { padding: 8px 10px; }
+  .is-card .upnext h3 { margin-bottom: 6px; }
+  .is-card .upnext .list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .is-card .upnext .list li { background: var(--panel2); border-radius: 999px; padding: 3px 12px 3px 4px; gap: 8px; }
+  .is-card .upnext .list li.next { background: color-mix(in srgb, var(--accent) 24%, var(--panel2)); }
+  .is-card .upnext .list li .x, .is-card .upnext .list li .nbadge { display: none; }
+  .is-card .upnext .list li.more { padding: 3px 8px; background: none; color: var(--muted); font-weight: 700; }
+  .is-card .stage.turn { padding: 8px 12px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -618,9 +630,9 @@ const ICON_SHUFFLE = `<svg width="20" height="20" viewBox="0 0 16 16" aria-hidde
 function headerHTML() {
   const installed = isInstalled();
   const snapLabel = installed && !pip ? 'Snap to side' : 'Dock back';
-  const popBtn = pip || (installed && winMode === 'free')
+  const popBtn = pip || (installed && winMode === 'card')
     ? `<button class="btn pop-btn" data-action="popIn" title="${installed && !pip ? 'Snap the window back to the right side of the screen' : 'Bring the timer back to the main window'}" aria-label="${snapLabel}">${ICON_IN}<span class="pop-txt">${snapLabel}</span></button>`
-    : (installed || canPop()) ? `<button class="btn pop-btn" data-action="popOut" title="${installed ? 'Unlock the window so you can move it (Snap to side locks it again)' : 'Float the timer above your other windows'}" aria-label="Pop out">${ICON_OUT}<span class="pop-txt">Pop out</span></button>` : '';
+    : (installed || canPop()) ? `<button class="btn pop-btn" data-action="popOut" title="${installed ? 'Shrink into a small fixed-size window you can move (Snap to side docks it again)' : 'Float the timer above your other windows'}" aria-label="Pop out">${ICON_OUT}<span class="pop-txt">Pop out</span></button>` : '';
   let right = '';
   if (state.screen === 'huddle') right = `<button class="btn" data-action="goSetup">Setup</button><button class="btn danger" data-action="endHuddle">End huddle</button>`;
   else if (state.screen === 'setup' && state.huddle && !state.huddle.endedAt) right = `<button class="btn primary" data-action="backToHuddle">Back to huddle</button>`;
@@ -728,7 +740,10 @@ function sideHTML(h) {
     const diff = r.used - r.allotted;
     return `<li><span class="lname">${esc(r.name)}</span><span class="ltime ${diff > 0 ? 'bad' : 'good'}">${fmtSecs(r.used)}${diff > 0 ? ` (+${fmtSecs(diff)})` : ''}</span></li>`;
   }).join('');
-  const upNext = pool.map((p, i) => `<li data-id="${p.id}" class="${i === 0 ? 'next' : ''}">${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span>${i === 0 ? '<span class="nbadge">Next</span>' : ''}<button class="x" data-action="skipPerson" aria-label="${esc(p.name)} is not here" title="Not here today">✕</button></li>`).join('');
+  const card = winMode === 'card';                      // the small square window shows just the next few, as chips
+  const shown = card ? pool.slice(0, 4) : pool;
+  const upNext = shown.map((p, i) => `<li data-id="${p.id}" class="${i === 0 ? 'next' : ''}">${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span>${i === 0 ? '<span class="nbadge">Next</span>' : ''}<button class="x" data-action="skipPerson" aria-label="${esc(p.name)} is not here" title="Not here today">✕</button></li>`).join('')
+    + (card && pool.length > shown.length ? `<li class="more">+${pool.length - shown.length} more</li>` : '');
   return `<aside class="side">
     <div class="card meta"><div><span class="lbl">Huddle time</span><b id="huddleClock">0:00</b></div><div><span class="lbl">Per person</span><b>${fmtSecs(h.durationSec)}</b></div></div>
     ${inTurn ? `<div class="card upnext"><h3>Up next (${pool.length})</h3>${pool.length ? `<ol class="list">${upNext}</ol>` : '<p class="muted">That\'s the last one.</p>'}</div>` : ''}
@@ -775,7 +790,7 @@ function render() {
   if (state.screen === 'huddle' && state.huddle) body = huddleHTML(state.huddle);
   else if (state.screen === 'summary' && state.huddle) body = summaryHTML(state.huddle);
   else { state.screen = 'setup'; body = setupHTML(); }
-  $('#app').className = state.screen === 'huddle' && state.huddle ? 'is-huddle' : '';
+  $('#app').className = state.screen === 'huddle' && state.huddle ? 'is-huddle' + (winMode === 'card' ? ' is-card' : '') : '';
   $('#app').innerHTML = headerHTML() + body;
   holdAwake(state.screen === 'huddle');
   if (state.screen !== 'huddle') document.title = 'Huddle Timer';
@@ -1124,21 +1139,22 @@ listen('keydown', e => {
 
 /* =====================================================================
    Windows: centered setup -> narrow side strip -> back again.
-   - Installed app window (during a huddle) has two modes, always ONE window (Chrome/Edge let an installed app
-     resize and move itself):
-       'dock': snapped to the right edge of the screen as a strip. A page can't truly freeze its own window, so
-               if you drag or resize it, it snaps straight back as soon as you let go.
-       'free': after "Pop out": a movable, resizable card. "Snap to side" docks it again.
+   - Installed app window (Chrome/Edge let an installed app resize and move itself). Always ONE window, in one of:
+       setup / summary: a normal centered window (the app also opens centered).
+       'dock': during a huddle, snapped to the right edge of the screen as a strip. If you drag or resize it, it
+               snaps straight back as soon as you let go (a page can't truly freeze its own window).
+       'card': after "Pop out": a small square window of FIXED SIZE that you can move. If you resize it, it
+               snaps back to that size when you let go. "Snap to side" docks it again.
    - Normal browser tab (Chrome / Edge): a tab can't be resized, so the only way to get a small window is a
      floating pop-out window ("Document Picture-in-Picture", always on top). The whole UI (#shell) moves into it.
    - Anywhere else (e.g. Safari): nothing moves; the layout simply adapts if you make the window narrow.
    ===================================================================== */
-const STRIP_W = 360, STRIP_MAX = 600, FLOAT_KEY = 'huddle-timer/float';
+const STRIP_W = 360, STRIP_MAX = 600, CARD_W = 520, CARD_H = 520, FLOAT_KEY = 'huddle-timer/float';
 const shell = $('#shell');
 const away = $('#away');
 let pip = null;                                  // the pop-out window (browser-tab case) while it is open
-let winMode = null;                              // installed app during a huddle: 'dock' | 'free' | null
-let dockBase = null, lockTimer = 0, lockLast = '', lockTries = 0;   // the docked window's home rectangle and the snap-back watcher
+let winMode = null;                              // installed app during a huddle: 'dock' | 'card' | null
+let lockBase = null, lockTimer = 0, lockLast = '', lockTries = 0;   // the window's home rectangle and the snap-back watcher
 const canPop = () => 'documentPictureInPicture' in window;
 const isInstalled = () => ['standalone', 'minimal-ui', 'window-controls-overlay'].some(m => matchMedia(`(display-mode: ${m})`).matches);
 const screenBox = () => { const s = window.screen; return { x: s.availLeft || 0, y: s.availTop || 0, w: s.availWidth, h: s.availHeight }; };
@@ -1146,6 +1162,7 @@ const hasScreen = b => b.w >= 500 && b.h >= 400;                   // ignore a n
 const placeWindow = (x, y, w, h) => { try { window.resizeTo(w, h); window.moveTo(x, y); } catch (e) { /* not allowed here */ } };
 const curRect = () => ({ x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight });
 const sameRect = (a, b) => ['x', 'y', 'w', 'h'].every(k => Math.abs(a[k] - b[k]) <= 4);
+const sameSize = (a, b) => Math.abs(a.w - b.w) <= 4 && Math.abs(a.h - b.h) <= 4;
 
 // The clock ticks from whichever window shows the UI, because a hidden main window gets its timers throttled.
 let ticker = { win: null, id: 0 };
@@ -1157,47 +1174,51 @@ function startTicker() {
   ticker = { win: w, id: w.setInterval(tick, 100) };
 }
 
-// ---- Installed app: docked strip (snaps back if moved) <-> free card ------------------------------------
-function startLock() { if (!lockTimer) lockTimer = setInterval(enforceDock, 150); }
-function stopLock() { clearInterval(lockTimer); lockTimer = 0; dockBase = null; lockLast = ''; lockTries = 0; }
+// ---- Installed app: docked strip <-> small fixed-size card ---------------------------------------------
+function startLock() { if (!lockTimer) lockTimer = setInterval(enforceWindow, 150); }
+function stopLock() { clearInterval(lockTimer); lockTimer = 0; lockBase = null; lockLast = ''; lockTries = 0; }
 
-// Place the strip on the right edge of the screen this window is on; whatever size and spot the browser settles on
-// (a window has a minimum width, about 500 px) becomes its home.
+// Whatever size and spot the browser settles on (a window has a minimum size) becomes the window's home.
+async function settleHome() { await sleep(350); lockBase = curRect(); lockTries = 0; lockLast = ''; }
+
+// Dock: the right edge of the screen this window is on, full height.
 async function snapToSide() {
   const b = screenBox();
-  if (!hasScreen(b)) { dockBase = curRect(); return; }
-  placeWindow(b.x + b.w - STRIP_W, b.y, STRIP_W, b.h);
-  await sleep(350);
-  dockBase = curRect(); lockTries = 0; lockLast = '';
+  if (hasScreen(b)) { placeWindow(b.x + b.w - STRIP_W, b.y, STRIP_W, b.h); await settleHome(); } else lockBase = curRect();
 }
 
-// While docked: if the window is dragged or resized away from home, wait until it stops moving, then put it back.
-// (Waiting means it never fights your hand while you drag, so nothing flickers.)
-function enforceDock() {
-  if (winMode !== 'dock' || !dockBase) return;
-  const cur = curRect(), key = [cur.x, cur.y, cur.w, cur.h].join();
-  if (sameRect(cur, dockBase)) { lockLast = ''; lockTries = 0; return; }
-  if (key !== lockLast) { lockLast = key; return; }                 // still moving: wait for it to stop
+// While locked: if the window differs from home (docked: any change; card: only its size), wait until it stops
+// changing, then put it back. Waiting means it never fights your hand while you drag, so nothing flickers.
+function enforceWindow() {
+  if (!winMode || !lockBase) return;
+  const cur = curRect();
+  if (winMode === 'dock' ? sameRect(cur, lockBase) : sameSize(cur, lockBase)) { lockLast = ''; lockTries = 0; return; }
+  const key = [cur.x, cur.y, cur.w, cur.h].join();
+  if (key !== lockLast) { lockLast = key; return; }                 // still being dragged or resized: wait for it to stop
   if (lockTries >= 5) return;                                       // the browser won't allow it (e.g. maximized): stop retrying
   lockTries++; lockLast = '';
-  placeWindow(dockBase.x, dockBase.y, dockBase.w, dockBase.h);
+  if (winMode === 'dock') placeWindow(lockBase.x, lockBase.y, lockBase.w, lockBase.h);
+  else { try { window.resizeTo(lockBase.w, lockBase.h); } catch (e) { /* not allowed here */ } }   // the card keeps wherever you put it
 }
 
 function loadFloat() {
-  try { const f = JSON.parse(localStorage.getItem(FLOAT_KEY)); return f && [f.x, f.y, f.w, f.h].every(Number.isFinite) ? f : null; } catch (e) { return null; }
+  try { const f = JSON.parse(localStorage.getItem(FLOAT_KEY)); return f && Number.isFinite(f.x) && Number.isFinite(f.y) ? f : null; } catch (e) { return null; }
 }
-// "Pop out": unlock the window and turn it into a small movable card (where you last left it, or top-right).
-function popOutFree() {
-  winMode = 'free'; stopLock();
-  const b = screenBox(), saved = loadFloat();
-  const w = saved ? saved.w : 520, h = saved ? saved.h : clamp(Math.round(b.h * 0.62), 520, 700);
-  const x = saved ? saved.x : b.x + b.w - w - 24, y = saved ? saved.y : b.y + 60;
-  if (hasScreen(b)) placeWindow(clamp(x, b.x, b.x + b.w - w), clamp(y, b.y, b.y + b.h - h), w, h);
+// "Pop out": a small square window of fixed size, where you last left it (or the top-right). Movable, not resizable.
+async function popOutCard() {
+  stopLock(); winMode = 'card';
   render();
+  const b = screenBox(), saved = loadFloat();
+  const x = saved ? saved.x : b.x + b.w - CARD_W - 24, y = saved ? saved.y : b.y + 60;
+  if (hasScreen(b)) {
+    placeWindow(clamp(x, b.x, b.x + b.w - CARD_W), clamp(y, b.y, b.y + b.h - CARD_H), CARD_W, CARD_H);
+    await settleHome();
+  } else lockBase = curRect();
+  if (winMode === 'card') startLock();
 }
-// "Snap to side": remember the card, then dock on the right edge of whichever screen it is on, and lock again.
+// "Snap to side": remember where the card was, then dock on the right edge of whichever screen it is on.
 async function dockSide() {
-  if (winMode === 'free') { try { localStorage.setItem(FLOAT_KEY, JSON.stringify(curRect())); } catch (e) { /* fine */ } }
+  if (winMode === 'card') { const r = curRect(); try { localStorage.setItem(FLOAT_KEY, JSON.stringify({ x: r.x, y: r.y })); } catch (e) { /* fine */ } }
   winMode = 'dock'; stopLock();
   render();
   await snapToSide();
@@ -1234,33 +1255,36 @@ function popInPip() {
 }
 
 // The header button and the "Bring it back here" button.
-function popOut() { if (isInstalled()) popOutFree(); else popOutPip(); }
+function popOut() { if (isInstalled()) popOutCard(); else popOutPip(); }
 function popIn() { if (isInstalled() && !pip) dockSide(); else popInPip(); }
+
+// A normal centered window, for the app's launch, Setup and the summary.
+function centerWindow() {
+  const b = screenBox(), w = Math.min(980, b.w - 80), h = Math.min(860, b.h - 80);
+  if (hasScreen(b)) placeWindow(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2), w, h);
+}
 
 // Called when a huddle starts (from the Start huddle click) or is resumed after a refresh (no click: gesture = false).
 async function enterStrip({ gesture = true } = {}) {
-  if (!state.data.settings.autoStrip || pip || winMode === 'free') return;
+  if (!state.data.settings.autoStrip || pip || winMode === 'card') return;
   if (isInstalled()) {
     winMode = 'dock';
-    if (window.outerWidth <= STRIP_MAX) { dockBase = curRect(); startLock(); return; }   // already strip-sized: that's home
+    if (window.outerWidth <= STRIP_MAX) { lockBase = curRect(); startLock(); return; }   // already strip-sized: that's home
     await snapToSide();
     if (window.outerWidth <= STRIP_MAX) { startLock(); return; }                        // it worked
-    winMode = null; dockBase = null;                                                    // the window can't be resized here
+    winMode = null; lockBase = null;                                                    // the window can't be resized here
   }
   if (!gesture) return;
   if (canPop()) await popOutPip();
   else if (!ui.tipShown) { ui.tipShown = true; toast('Tip: make this window narrow and put it beside Planner.'); }
 }
 
-// Called for Setup / summary: unlock, put a pop-out back, and re-center an installed window that is strip-sized.
+// Called for Setup / summary: unlock, put a pop-out back, and re-center an installed window.
 function leaveStrip() {
   const wasMode = !!winMode;
   stopLock(); winMode = null;
   if (pip) popInPip();
-  if (isInstalled() && (wasMode || window.outerWidth <= STRIP_MAX)) {
-    const b = screenBox(), w = Math.min(980, b.w - 80), h = Math.min(860, b.h - 80);
-    if (hasScreen(b)) placeWindow(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2), w, h);
-  }
+  if (isInstalled() && (wasMode || window.outerWidth <= STRIP_MAX)) centerWindow();
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -1280,7 +1304,9 @@ document.addEventListener('visibilitychange', () => {
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* optional feature */ }));
   }
-  if (state.screen === 'huddle') enterStrip({ gesture: false }); else leaveStrip();
+  if (state.screen === 'huddle') enterStrip({ gesture: false });
+  else if (isInstalled()) centerWindow();          // the installed app opens centered for Setup
+  else leaveStrip();
 })();
 })();
 </script>
