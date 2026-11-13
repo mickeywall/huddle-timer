@@ -142,8 +142,17 @@ summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .order li { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
 .order .num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 .order .oname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 1.05rem; }
-.order.fresh li { animation: settle .4s ease-out both; animation-delay: calc(var(--i, 0) * 45ms); }
-@keyframes settle { from { transform: translateY(-8px) scale(.97); opacity: .3; } to { transform: none; opacity: 1; } }
+/* randomize: the rows physically slide into new places, then land with a bounce, a sheen, popping numbers and a glow on #1 */
+.order.riffle li { will-change: transform; border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: color-mix(in srgb, var(--accent) 12%, var(--panel2)); }
+.order.fresh li { position: relative; overflow: hidden; animation: settle .55s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(var(--i, 0) * 55ms); }
+.order.fresh li::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .9s ease-out both; animation-delay: calc(var(--i, 0) * 70ms + 250ms); }
+.order.fresh .num { animation: numpop .55s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 160ms); }
+.order.fresh li:first-child { animation: settle .55s cubic-bezier(.34, 1.56, .64, 1) both, firstglow 1.3s ease-out .35s both; }
+@keyframes settle { from { transform: translateY(-14px) scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sheen { to { transform: translateX(130%); } }
+@keyframes numpop { from { transform: scale(0) rotate(-120deg); } to { transform: none; } }
+@keyframes firstglow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 80%, transparent); } 100% { box-shadow: 0 0 0 18px transparent; } }
+.spark { position: absolute; width: 9px; height: 9px; border-radius: 50%; pointer-events: none; z-index: 9; }
 .stage.shuffling .btn { opacity: .5; pointer-events: none; }
 .x { flex: none; border: 0; background: none; color: var(--muted); width: 28px; height: 28px; border-radius: 8px; font-size: .95rem; }
 .x:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
@@ -221,6 +230,8 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 .popped .panel { text-align: center; display: grid; gap: 14px; justify-items: center; }
 .popped .dbg { font-size: .7rem; color: var(--muted); text-align: left; max-width: 100%; overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; }
 .popped .dbg:empty { display: none; }
+.pip-hint { position: sticky; top: 0; z-index: 40; padding: 7px 12px; background: var(--warn); color: #1b1300; font-size: .78rem; font-weight: 700; text-align: center; }
+.pip-hint[hidden] { display: none; }
 .pop-btn { display: inline-flex; align-items: center; gap: 6px; }
 .pop-btn svg { flex: none; }
 .top-actions .btn { white-space: nowrap; }
@@ -289,6 +300,47 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .summary .actions .btn { flex: 1 1 100%; }
   .backup .btns .go { flex: 1 1 100%; margin-left: 0; }   /* narrow window: Start huddle gets its own full-width row under the backup buttons */
 }
+
+/* A tall strip: scale everything with the window's height (vh) so the whole column is used, and let the running card
+   take whatever space is left over. Each clamp() starts at the compact size above, so a short window looks the same. */
+@media (max-width: 600px) {
+  #app.is-huddle { display: flex; flex-direction: column; min-height: calc(100vh - 20px); }
+  .is-huddle .huddle { flex: 1 1 auto; display: flex; flex-direction: column; align-items: stretch; gap: clamp(10px, 1.4vh, 18px); }
+  .is-huddle .stage.turn { flex: 1 1 auto; justify-content: space-evenly; padding: clamp(10px, 1.6vh, 24px) 14px; gap: clamp(6px, 1.2vh, 18px); }
+  .logo { width: clamp(30px, 4.2vh, 44px); height: clamp(30px, 4.2vh, 44px); font-size: clamp(.95rem, 2.2vh, 1.3rem); }
+  .brand { font-size: clamp(1.05rem, 2.4vh, 1.4rem); }
+  .top-actions .btn { padding: clamp(6px, 1vh, 12px) clamp(10px, 1.5vh, 16px); font-size: clamp(.85rem, 1.9vh, 1.1rem); }
+  .top-actions .pop-btn { padding: clamp(6px, 1vh, 12px) clamp(9px, 1.4vh, 15px); }
+  .avatar.xl { --s: clamp(40px, min(16cqw, 8.6vh), 110px); }
+  .wname { font-size: clamp(17px, min(8cqw, 4.2vh), 40px); }
+  .tag { font-size: clamp(.64rem, 1.5vh, .9rem); padding: clamp(1px, .3vh, 4px) clamp(10px, 1.4vh, 16px); }
+  .clock { font-size: clamp(44px, min(27cqw, 15.5vh), 170px); }
+  .bar { height: clamp(8px, 1.1vh, 14px); }
+  .actions .btn { padding: clamp(9px, 1.7vh, 20px) 14px; font-size: clamp(.95rem, 2.3vh, 1.35rem); border-radius: clamp(12px, 1.8vh, 18px); }
+  .stage.turn .btn.link { font-size: clamp(.76rem, 1.8vh, 1rem); }
+  .card { padding: clamp(10px, 1.5vh, 20px) clamp(12px, 1.8vh, 22px); }
+  .card h3 { font-size: clamp(.78rem, 1.7vh, 1rem); margin-bottom: clamp(6px, 1vh, 12px); }
+  .side { gap: clamp(8px, 1.2vh, 16px); }
+  .list { gap: clamp(2px, .5vh, 8px); }
+  .list li { padding: clamp(2px, .55vh, 9px) 4px; gap: clamp(8px, 1.2vh, 14px); }
+  .list .avatar.xs { --s: clamp(28px, 4.3vh, 50px); }
+  .list .lname { font-size: clamp(1rem, 2.3vh, 1.4rem); }
+  .lnum { width: clamp(20px, 3.2vh, 32px); height: clamp(20px, 3.2vh, 32px); font-size: clamp(.68rem, 1.6vh, .95rem); }
+  .nbadge { font-size: clamp(.62rem, 1.4vh, .85rem); }
+  .x { width: clamp(26px, 3.8vh, 40px); height: clamp(26px, 3.8vh, 40px); }
+  .meta { padding: clamp(8px, 1.3vh, 16px) clamp(12px, 1.8vh, 22px); }
+  .meta .lbl { font-size: clamp(.75rem, 1.6vh, .95rem); }
+  .meta b { font-size: clamp(1.05rem, 2.8vh, 1.8rem); }
+  /* before the first turn: the randomize / order screens */
+  .prep { gap: clamp(10px, 1.4vh, 18px); }
+  .prep h2 { font-size: clamp(1.25rem, 3.2vh, 1.9rem); }
+  .prep .btn.big { padding: clamp(12px, 2.2vh, 24px) 16px; font-size: clamp(1.05rem, 2.6vh, 1.5rem); border-radius: clamp(14px, 2vh, 20px); }
+  .order { gap: clamp(6px, .9vh, 12px); }
+  .order li { padding: clamp(5px, 1vh, 14px) 8px clamp(5px, 1vh, 14px) 10px; gap: clamp(8px, 1.2vh, 14px); }
+  .order .avatar.s { --s: clamp(34px, 5vh, 58px); }
+  .order .oname { font-size: clamp(.98rem, 2.5vh, 1.5rem); }
+  .order .num { width: clamp(24px, 3.4vh, 38px); height: clamp(24px, 3.4vh, 38px); font-size: clamp(.78rem, 1.7vh, 1.05rem); }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
@@ -304,6 +356,7 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   </div>
 </div>
 <div id="shell">
+<div id="pipHint" class="pip-hint" role="status" hidden></div>
 <div class="app">
   <div id="app"></div>
   <p class="foot">Runs entirely in your browser &mdash; names and photos never leave this computer.</p>
@@ -474,13 +527,22 @@ function tone(freq, start, dur, vol = .08, type = 'sine') {
   g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
   o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .03);
 }
+function sweep(f0, f1, dur, vol = .05, type = 'sawtooth') {   // a rising/falling "whoosh"
+  const c = ensureAudio(); if (!c) return;
+  const t0 = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + dur + .03);
+}
 const SOUNDS = {
-  tick() { tone(1500, 0, .03, .02, 'square'); },
+  tick(p = 0) { tone(850 + p * 95, 0, .035, .028, 'square'); },                      // the shuffle ticks climb in pitch
+  whoosh() { sweep(180, 1100, .35, .045); },
+  land() { tone(130, 0, .18, .16); tone(660, .05, .35, .09); tone(990, .18, .55, .08); tone(1480, .3, .5, .05); },
   chime() { tone(660, 0, .35, .09); tone(990, .13, .55, .08); },
   warn() { tone(880, 0, .25, .09); },
   timesUp() { tone(440, 0, .45, .12, 'triangle'); tone(330, .38, .8, .12, 'triangle'); }
 };
-const sound = name => { if (state.data.settings.sound) { try { SOUNDS[name](); } catch (e) { /* ignore */ } } };
+const sound = (name, arg) => { if (state.data.settings.sound) { try { SOUNDS[name](arg); } catch (e) { /* ignore */ } } };
 
 /* Keep the screen awake during a huddle */
 let wakeLock = null, wakeWin = null;
@@ -625,7 +687,7 @@ function setupHTML() {
 }
 
 const orderRow = (p, n, i) => `<li data-id="${p.id}" style="--i:${i}">${n ? `<span class="num">${n}</span>` : ''}${avatar(p, 's')}<span class="oname">${esc(p.name)}</span><button class="x" data-action="skipPerson" aria-label="${esc(p.name)} is not here" title="Not here today">✕</button></li>`;
-const plainRow = p => `<li>${avatar(p, 's')}<span class="oname">${esc(p.name)}</span></li>`;
+const plainRow = p => `<li data-id="${p.id}">${avatar(p, 's')}<span class="oname">${esc(p.name)}</span></li>`;
 
 function stageHTML(h) {
   const cur = h.current, pool = queuePeople();
@@ -721,6 +783,7 @@ function render() {
   if (state.screen === 'huddle' && state.huddle) body = huddleHTML(state.huddle);
   else if (state.screen === 'summary' && state.huddle) body = summaryHTML(state.huddle);
   else { state.screen = 'setup'; body = setupHTML(); }
+  $('#app').className = state.screen === 'huddle' && state.huddle ? 'is-huddle' : '';
   $('#app').innerHTML = headerHTML() + body;
   holdAwake(state.screen === 'huddle');
   if (state.screen !== 'huddle') document.title = 'Huddle Timer';
@@ -730,8 +793,30 @@ function render() {
 /* =====================================================================
    The huddle: randomize the order, then each turn starts automatically
    ===================================================================== */
-// Shows quick shuffles of the names, then settles on the order. The real order is decided and saved up front;
-// the animation is just for show (and a safety timer makes sure it always finishes).
+// A burst of colored sparks from the first row, when the order lands.
+function sparkBurst() {
+  if (reduced()) return;
+  const stage = $('#stage'), first = $('#orderList li');
+  if (!stage || !first) return;
+  const sb = stage.getBoundingClientRect(), fb = first.getBoundingClientRect();
+  const cx = fb.left - sb.left + fb.width / 2, cy = fb.top - sb.top + fb.height / 2;
+  const colors = ['#6f8dff', '#33d391', '#f6b93b', '#ff7a90', '#c58bff'];
+  for (let k = 0; k < 20; k++) {
+    const s = doc.createElement('i');
+    s.className = 'spark'; s.style.cssText = `left:${cx}px;top:${cy}px;background:${colors[k % colors.length]}`;
+    stage.appendChild(s);
+    const a = Math.random() * Math.PI * 2, d = 70 + Math.random() * 120;
+    const anim = s.animate(
+      [{ transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+       { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(0)`, opacity: 0 }],
+      { duration: 650 + Math.random() * 450, easing: 'cubic-bezier(.1, .7, .3, 1)' });
+    anim.onfinish = () => s.remove();
+  }
+}
+
+// Randomize: the names' rows physically slide into new places, faster at first and then slowing down like a slot
+// machine, and the last hop lands on the real order with a bounce. The real order is decided and saved up front; the
+// animation is just for show (and a safety timer makes sure it always finishes).
 function randomize() {
   const h = state.huddle;
   if (!h || h.current || ui.busy) return;
@@ -739,23 +824,49 @@ function randomize() {
   if (!ids.length) return;
   ensureAudio();
   h.queue = ids; h.ordered = true; saveSession();
-  const settle = () => { ui.busy = false; ui.fresh = true; sound('chime'); render(); };
-  if (ids.length < 2 || reduced()) { settle(); return; }
+  const w = curWin();
+  const settle = () => { ui.busy = false; ui.fresh = true; render(); w.setTimeout(sparkBurst, 320); };
+  const stage = $('#stage'), ul = $('#orderList');
+  if (ids.length < 2 || reduced() || !stage || !ul) { sound('chime'); settle(); return; }
   ui.busy = true;
-  const stage = $('#stage'); if (stage) stage.classList.add('shuffling');
-  const w = curWin(), t0 = w.performance.now(), dur = clamp(900 + ids.length * 70, 1100, 2000);
-  let finished = false;
+  stage.classList.add('shuffling'); ul.classList.add('riffle');
+  // rebuild the list as plain rows that we can move around (same people, current order)
+  const startIds = Array.from(ul.children).map(li => li.dataset.id).filter(id => person(id));
+  ul.innerHTML = startIds.map(person).map(plainRow).join('');
+  const rows = new Map(Array.from(ul.children).map(li => [li.dataset.id, li]));
+  // FLIP: remember where each row is, reorder the DOM, then animate every row from its old place to its new one
+  const hop = (order, dur, easing, tiltMax) => {
+    const before = new Map(); rows.forEach((li, id) => before.set(id, li.getBoundingClientRect().top));
+    order.forEach(id => { const li = rows.get(id); if (li) ul.appendChild(li); });
+    rows.forEach((li, id) => {
+      const dy = before.get(id) - li.getBoundingClientRect().top;
+      if (!dy) return;
+      li.animate([{ transform: `translateY(${dy}px) scale(${tiltMax ? 1.04 : 1}) rotate(${(Math.random() * 2 - 1) * tiltMax}deg)` }, { transform: 'none' }],
+        { duration: dur, easing });
+    });
+  };
+  const delays = [90, 90, 95, 100, 110, 125, 145, 170, 200, 240];   // the pause between hops grows: it slows down
+  let finished = false, i = 0, last = startIds.join();
   const finish = () => { if (!finished) { finished = true; settle(); } };
   const step = () => {
     if (finished) return;
-    if (w.performance.now() - t0 >= dur) return finish();
-    const ul = $('#orderList');
-    if (ul) ul.innerHTML = shuffle(ids).map(person).filter(Boolean).map(plainRow).join('');
-    sound('tick');
-    w.setTimeout(step, 85);
+    if (i < delays.length) {
+      const d = delays[i++];
+      let order = shuffle(ids), tries = 0;
+      while ((order.join() === last || (i === delays.length && order.join() === ids.join())) && tries++ < 8) order = shuffle(ids);
+      last = order.join();
+      sound('tick', i);
+      hop(order, d + 70, 'cubic-bezier(.2, .9, .25, 1)', 2.2);
+      w.setTimeout(step, d);
+    } else {                                           // the real order, with a bouncy landing
+      sound('whoosh');
+      hop(ids, 520, 'cubic-bezier(.34, 1.56, .64, 1)', 0);
+      sound('land');
+      w.setTimeout(finish, 600);
+    }
   };
   step();
-  setTimeout(finish, dur + 1200);   // safety net on the main window (the pop-out may close, or frames may pause)
+  setTimeout(finish, 4500);   // safety net on the main window (the pop-out may close, or frames may pause)
 }
 
 function startNext() {
@@ -1053,17 +1164,18 @@ async function popOut() {
     // tuck) and returns here on Dock back, so only the floating window is ever visible.
     const home = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight, iw: window.innerWidth, ih: window.innerHeight };
     // Installed app: ask for a floating window at least as big as this window's OUTER size right now, so this window can
-    // always fit exactly underneath it (a window can't get smaller than its own minimum size, and can't hang off the
-    // screen edge). Chrome normally reuses the previous pop-out's size and ignores ours, so preferInitialWindowPlacement
-    // makes it use the size we ask for.
+    // fit exactly underneath it. Chrome normally reuses the previous pop-out's size AND position and ignores ours; that is
+    // fine: it keeps the window on screen, and once a click inside the pop-out lets us resize it (see tuck), Chrome
+    // remembers the bigger size for next time. (Don't use preferInitialWindowPlacement: it can leave the window hanging
+    // off the screen edge, where the strip can't follow.)
     const w = await window.documentPictureInPicture.requestWindow(isInstalled()
-      ? { width: clamp(home.w + 6, 520, 700), height: clamp(home.h, 400, Math.max(400, b.h - 60)), preferInitialWindowPlacement: true }
+      ? { width: clamp(home.w + 6, 520, 700), height: clamp(home.h, 400, Math.max(400, b.h - 60)) }
       : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
     pip = w;
     w.document.documentElement.lang = 'en';
     w.document.head.append(document.head.querySelector('style').cloneNode(true));
     LISTENERS.forEach(([type, fn]) => w.document.addEventListener(type, fn));
-    w.document.addEventListener('click', tuck);      // a click inside the pop-out lets the browser accept a resize of the pop-out itself
+    for (const t of ['pointerdown', 'click', 'keydown']) w.document.addEventListener(t, tuck);   // a click or key inside the pop-out lets the browser accept a resize of the pop-out itself
     w.document.body.append(shell);
     doc = w.document;
     away.hidden = false;
@@ -1081,8 +1193,9 @@ async function popOut() {
 // to sit exactly underneath the (always-on-top) pop-out, and it follows if you drag or resize the pop-out.
 function tuck(ev) {
   if (!pip || !popHome) return;
-  const fromClick = !!(ev && ev.type === 'click');
+  const fromClick = !!(ev && /^(click|pointerdown|keydown)$/.test(ev.type));
   const note = msg => { const d = away.querySelector('#dbg'); if (d && d.textContent !== msg) d.textContent = msg; };   // small status line on the strip's placeholder
+  const hint = msg => { const h = shell.querySelector('#pipHint'); if (!h) return; h.hidden = !msg; if (msg && h.textContent !== msg) h.textContent = msg; };   // yellow bar inside the pop-out
   const box = (x, y, w, h) => `${Math.round(x)},${Math.round(y)} ${Math.round(w)}×${Math.round(h)}`;
   try {
     const x = pip.screenX ?? pip.screenLeft, y = pip.screenY ?? pip.screenTop;
@@ -1090,7 +1203,12 @@ function tuck(ev) {
     if (![x, y, w, h].every(Number.isFinite) || w < 100 || h < 100) { note(`Not hiding the strip: the browser doesn't report the pop-out's position (${x}, ${y}, ${w}×${h}).`); return; }
     const here = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight };
     const near = (a, b) => Math.abs(a - b) <= 3;
-    if (near(here.x, x) && near(here.y, y) && near(here.w, w) && near(here.h, h)) { note(`Strip hidden under the pop-out (${box(x, y, w, h)}).`); return; }
+    if (near(here.x, x) && near(here.y, y) && near(here.w, w) && near(here.h, h)) { hint(''); note(`Strip hidden under the pop-out (${box(x, y, w, h)}).`); return; }
+    // Why isn't it hidden yet? Tell the person what to do in the pop-out itself, where they are looking.
+    const sb = screenBox();
+    const offscreen = sb.w >= 500 && (x < sb.x - 3 || y < sb.y - 3 || x + w > sb.x + sb.w + 3);
+    hint(offscreen ? 'This window is partly off the screen. Drag it fully onto the screen so the other window can hide behind it.'
+      : (here.w > w + 3 || here.h > h + 3) ? 'Click anywhere in this window once to finish hiding the other one.' : '');
     tuckTries++;
     // If this window can't get as small as the pop-out (it has a minimum size), grow the pop-out instead (the browser only
     // allows that right after a click inside the pop-out, so this is also retried from its click handler).
@@ -1107,6 +1225,7 @@ function popIn() {
   try { w.clearInterval(tuckTimer); } catch (e) { /* window already gone */ }
   tuckTimer = 0; popHome = null;
   const d = away.querySelector('#dbg'); if (d) d.textContent = '';
+  const ph = shell.querySelector('#pipHint'); if (ph) ph.hidden = true;
   pip = null; doc = document;
   document.body.append(shell);
   away.hidden = true;

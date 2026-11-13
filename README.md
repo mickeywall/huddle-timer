@@ -17,7 +17,8 @@ Everything runs in the browser, and nothing is ever uploaded.
 3. Untick **Here today** for anyone who is out.
 4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
    "Beside Planner" below for how that works in each browser).
-5. Press **Randomize order**. The names shuffle and settle into a numbered list. Not happy with it?
+5. Press **Randomize order**. The names slide around, slowing down like a slot machine, then land in a
+   numbered list with a bounce, a shine, popping numbers and a burst of sparks. Not happy with it?
    Press **Randomize again**. Then press **Start** (it says who goes first).
 6. Each person's countdown runs. Press **Done** when they finish and the next person starts automatically
    (the button names who is next). **Pause** stops the clock. The **Up next** list shows everyone
@@ -87,12 +88,13 @@ Edge only). If you're using the installed app, its window moves and shrinks itse
 underneath the floating window (and follows it if you drag it), so only the floating window is visible.
 Click **Dock back** (the same icon), or close the floating window, and the app window goes straight back
 to its exact size and position. While popped out, a small status line on the hidden window says whether it
-managed to hide (handy for troubleshooting). The floating window is requested at least as big as the app
-window (an installed window can't get much narrower than about 500 px), with Chrome's "use the initial
-placement" option so it doesn't reuse a smaller size from last time. Chrome decides where it opens (a page
-can't set its position), so drag it where you like and the hidden window follows. If Chrome still makes it
-narrower than the app window can shrink, a sliver shows until you click anywhere inside the floating window
-once; it then widens itself to cover the app window.
+managed to hide (handy for troubleshooting). Chrome decides where the floating window opens and how big it
+is (it reuses the last one's position and size; a page can't set them), so drag it where you like and the
+hidden window follows. An installed window can't get much narrower than about 500 px, so the first time
+the floating window may be narrower than that: a yellow bar appears at its top saying "Click anywhere in
+this window once". Do that and the floating window widens itself to cover the app window; Chrome remembers
+the size for next time. If the floating window is partly off the edge of the screen, the yellow bar says to
+drag it fully onto the screen (the hidden window can't hang off the edge, so it couldn't follow).
 
 Browsers don't let a page minimize or hide its own window, so this is done by tucking the strip out of
 sight rather than truly hiding it. If the strip's minimum size is larger than the floating window, a
@@ -140,7 +142,11 @@ loosened deliberately, adding only
 
 `h.ordered` is false until **Randomize order** is pressed (queue is in list order), then true. `randomize()`
 decides and saves the order first and only then plays the shuffle animation, with a safety timer so the UI
-can never get stuck. `startNext()` takes the first id off `h.queue` and starts its timer; it runs from
+can never get stuck. The animation is FLIP: it reorders the real rows in the DOM and animates each from its
+old place with the Web Animations API (ten hops with growing pauses, then a bouncy landing on the real order),
+followed by CSS keyframes (shine, number pop, glow on #1) and `sparkBurst()`. In a narrow window, sizes in the
+running view use `clamp()` with `vh` units and the running card grows to take leftover height, so a tall strip
+is filled instead of leaving empty space at the bottom. `startNext()` takes the first id off `h.queue` and starts its timer; it runs from
 **Start** and from every Done/skip, which is what makes turns chain automatically. Saved sessions from the
 older "spin" version (a person in a `landed` phase) are converted on load.
 
@@ -157,16 +163,16 @@ older "spin" version (a person in a `landed` phase) are converted on load.
   (Chrome docs), so `tuck()` reads the pop-out's `screenX/Y` and `outerWidth/Height` every 250 ms and, until
   the main window matches, keeps calling `resizeTo` / `moveTo` on the *main* window to put it underneath the
   always-on-top pop-out (so a call the browser ignores is simply retried), every animation frame in the
-  pop-out plus a 50 ms timer, so it keeps up while you drag. The pop-out is requested at least as big as the
-  main window's outer size with `preferInitialWindowPlacement: true` (Chrome otherwise reuses the previous
-  pop-out's size and ignores ours; found from a screen recording: a ~500 px-wide strip under a ~440 px pop-out
-  can't hide, and Chrome won't let a window hang off the screen edge, so it showed as a "shadow"). The main
-  window can then always fit under it; if the browser still makes it smaller
-  than the main window's minimum size, `tuck()` grows the pop-out with `pip.resizeTo` (the browser only allows
-  that during a click inside the pop-out, so `tuck` also runs from the pop-out's click handler). If the
-  pop-out's geometry isn't readable it does nothing and says so in the `#dbg` line. Dock back (`popIn`)
-  restores the saved bounds.
-  A normal browser tab is never moved. (Pages can't minimize or hide their own window.)
+  pop-out plus a 50 ms timer, so it keeps up while you drag. Chrome reuses the previous pop-out's size and
+  position and ignores the requested ones (found from screen recordings: a ~500 px-wide strip can't hide
+  under a ~440 px pop-out, and Chrome won't let a window hang off the screen edge, so it showed as a
+  "shadow"). `preferInitialWindowPlacement` was tried and removed: it opened the pop-out partly off-screen.
+  Instead, if the main window can't get as small as the pop-out, `tuck()` grows the pop-out with
+  `pip.resizeTo`, which Chrome only allows during a user gesture inside the pop-out, so `tuck` also runs from
+  the pop-out's `pointerdown` / `click` / `keydown` and a yellow `#pipHint` bar asks for that click (Chrome
+  then remembers the bigger size). The bar also says when the pop-out is partly off-screen. If the pop-out's
+  geometry isn't readable it does nothing and says so in the `#dbg` line. Dock back (`popIn`) restores the
+  saved bounds. A normal browser tab is never moved. (Pages can't minimize or hide their own window.)
 - Neither available (Safari, Firefox): nothing moves, and a one-time tip is shown.
 - Restoring: Setup / summary dock the pop-out back, or re-center an installed window that is strip-sized.
 
