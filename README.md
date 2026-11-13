@@ -20,9 +20,9 @@ Everything runs in the browser, and nothing is ever uploaded.
 3. Untick **Here today** for anyone who is out.
 4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
    "Beside Planner" below for how that works in each browser).
-5. Press **Randomize order**. Row by row, from the top, each name tile cracks, breaks into pieces that fall
-   away, and a different name is underneath, numbered in the new order (click anywhere to skip the show).
-   Then the new list slides into place. Not happy with it?
+5. Press **Randomize order**. Every row turns into a little slot reel: all the names roll through every row
+   at once (blurring past, ticking), then the rows stop one at a time from the top, each landing on its new name
+   with a click and its number popping in (click anywhere to skip the show). Not happy with it?
    Press **Randomize again**. Then press **Start** (it says who goes first).
 6. Each person's countdown runs. Press **Done** when they finish and the next person starts automatically
    (the button names who is next). **Pause** stops the clock. The **Up next** list shows everyone
@@ -163,16 +163,17 @@ loosened deliberately, adding only
 
 `h.ordered` is false until **Randomize order** is pressed (queue is in list order), then true. `randomize()`
 decides and saves the order first and only then plays the show, with a safety timer (6.5 s) so the UI can
-never get stuck. The show: a copy of the
-stage (`stage.cloneNode`, class `crumble`, in a wrapper with the same classes as `#app` so the narrow-window list
-styles apply) is laid over the real one. Row by row (`GAP` apart) `startCrack()` draws crack lines on the tile
-(SVG paths along the interior edges of a jittered grid from `crackPieces()`) and shakes it, then `breakTile()`
-clones the tile into one clipped copy per grid cell (`clip-path: polygon`), flings them down and away with the Web
-Animations API, and swaps the tile for the next name in the new order (a numbered row, with a brief glow). When
-every tile has broken, `settle()` renders the real ordered list (rows hidden by `.order.dealing`), fades the copy's
-background and slides its rows to the real rows' places, then `finish()` removes the copy. Rows scrolled out of
-view (a long list in a narrow window) just swap. There is deliberately no highlight on the first person. Clicking
-the copy skips straight to the finished list, and a safety timer (9 s) guarantees the UI can never get stuck. In a narrow window, sizes in the
+never get stuck. The show: every
+row of the list is rebuilt as a reel (`.rwin` > `.rtrk`, a column of `L` names that starts on whoever is in that
+row now and ends on its new name) and its track is rolled with the Web Animations API (a decelerating curve, plus a
+blur that clears as it slows). Each row's stop time is `START + i * GAP` (plus a little jitter); at that moment
+`lock()` removes the reel's fade mask, swaps the "?" badge for the number (with a pop) and flashes the row. A ticker
+that slows down and a click per row make the sound. When the last row has stopped, `settle()` calls `render()`
+(the real ordered list) and glides each real row from where its reel was (FLIP), because the ordered screen has
+slightly different buttons above the list. Nothing flies around and there is deliberately no highlight on the first
+person. Clicking the stage skips straight to the finished list, and a safety timer (8 s) guarantees the UI can
+never get stuck; the lock-ins are driven by timers, so they still happen if the browser holds animation events
+back. In a narrow window, sizes in the
 running view use `clamp()` with `vh` units and the running card grows to take leftover height, so a tall strip
 is filled instead of leaving empty space at the bottom. The running view never scrolls as a whole
 (`#app.is-huddle` is the window height with `overflow: hidden`): the running card keeps its height and the
