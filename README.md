@@ -83,22 +83,16 @@ You can turn the automatic move off under Setup > More options.
    Screen Recording (called Screen & System Audio Recording on newer macOS versions).
 4. Randomize, start, and as each person comes up, everyone looks at their Planner column.
 
-You can also float the timer yourself at any time with the small pop-out icon at the top (Chrome and
-Edge only). If you're using the installed app, its window moves and shrinks itself to hide directly
-underneath the floating window (and follows it if you drag it), so only the floating window is visible.
-Click **Dock back** (the same icon), or close the floating window, and the app window goes straight back
-to its exact size and position. While popped out, a small status line on the hidden window says whether it
-managed to hide (handy for troubleshooting). Chrome decides where the floating window opens and how big it
-is (it reuses the last one's position and size; a page can't set them), so drag it where you like and the
-hidden window follows. An installed window can't get much narrower than about 500 px, so the first time
-the floating window may be narrower than that: a yellow bar appears at its top saying "Click anywhere in
-this window once". Do that and the floating window widens itself to cover the app window; Chrome remembers
-the size for next time. If the floating window is partly off the edge of the screen, the yellow bar says to
-drag it fully onto the screen (the hidden window can't hang off the edge, so it couldn't follow).
+**Pop out / Dock back (the small icon at the top).**
 
-Browsers don't let a page minimize or hide its own window, so this is done by tucking the strip out of
-sight rather than truly hiding it. If the strip's minimum size is larger than the floating window, a
-sliver of it may peek out; its taskbar button also stays.
+- **Installed app:** *Pop out* turns the same window into a small floating card (about 520 px wide, in the
+  top-right), and *Dock back* puts it back exactly where it was. It is one window the whole time: nothing
+  opens, nothing flickers, nothing needs a click. The card remembers where you last put it. (A web page
+  can't keep its own window above other windows, so the card can be covered by another window if you click
+  one. Put Planner and the card side by side, or use a normal browser tab for the always-on-top version.)
+- **Normal browser tab (Chrome or Edge):** *Pop out* opens a small floating window that stays above your
+  other windows (this is the only way a browser tab can become a small window), and the tab shows "Bring it
+  back here". Dock back, or close the floating window, to return.
 
 ## For the developer
 
@@ -154,27 +148,22 @@ older "spin" version (a person in a `landed` phase) are converted on load.
 
 - Installed app (`display-mode: standalone` etc.): `window.resizeTo` / `moveTo` to the strip, and it checks
   `outerWidth` afterwards. If the browser ignored it, it falls back to the pop-out.
-- Otherwise the pop-out uses the Document Picture-in-Picture API (Chrome / Edge 116+, desktop; it needs the
-  click on Start huddle as its user gesture). The whole UI (`#shell`) is moved into the floating window and
-  moved back on close; app state stays in the main page. Event listeners are registered through `listen()`
-  so they can be replayed on the pop-out's document, and the clock interval and shuffle animation run in
-  whichever window currently shows the UI (a hidden main window gets its timers throttled).
-- Pop-out from an installed app window (any size): the pop-out's position can't be set by the page
-  (Chrome docs), so `tuck()` reads the pop-out's `screenX/Y` and `outerWidth/Height` every 250 ms and, until
-  the main window matches, keeps calling `resizeTo` / `moveTo` on the *main* window to put it underneath the
-  always-on-top pop-out (so a call the browser ignores is simply retried), every animation frame in the
-  pop-out plus a 50 ms timer, so it keeps up while you drag. Chrome reuses the previous pop-out's size and
-  position and ignores the requested ones (found from screen recordings: a ~500 px-wide strip can't hide
-  under a ~440 px pop-out, and Chrome won't let a window hang off the screen edge, so it showed as a
-  "shadow"). `preferInitialWindowPlacement` was tried and removed: it opened the pop-out partly off-screen.
-  Instead, if the main window can't get as small as the pop-out, `tuck()` grows the pop-out with
-  `pip.resizeTo`, which Chrome only allows during a user gesture inside the pop-out, so `tuck` also runs from
-  the pop-out's `pointerdown` / `click` / `keydown` and a yellow `#pipHint` bar asks for that click (Chrome
-  then remembers the bigger size). The bar also says when the pop-out is partly off-screen. If the pop-out's
-  geometry isn't readable it does nothing and says so in the `#dbg` line. Dock back (`popIn`) restores the
-  saved bounds. A normal browser tab is never moved. (Pages can't minimize or hide their own window.)
+- **Pop out / Dock back, installed app:** `floatWindow()` saves the window's bounds in `floatHome` and resizes /
+  moves the same window into a floating card (the last card bounds from `localStorage` `huddle-timer/float`, or
+  520 px wide in the top-right); `dockWindow()` stores the card's bounds and restores `floatHome`. One resize
+  and one move each, no second window. This replaced an earlier design that opened a Document
+  Picture-in-Picture window and tried to hide the app window underneath it: Chrome won't let a page set the
+  pop-out's position or reliably size it, and a window can't hang off-screen or shrink below its minimum
+  (about 500 px wide), so it needed clicks, retried constantly and flickered. Don't go back to that.
+- **Normal browser tab:** the pop-out uses the Document Picture-in-Picture API (Chrome / Edge 116+, desktop; it
+  needs a click as its user gesture; also used as the fallback when an installed window can't be resized). The
+  whole UI (`#shell`) is moved into the floating window and moved back on close; app state stays in the main
+  page. Event listeners are registered through `listen()` so they can be replayed on the pop-out's document,
+  and the clock interval and shuffle animation run in whichever window currently shows the UI (a hidden main
+  window gets its timers throttled).
 - Neither available (Safari, Firefox): nothing moves, and a one-time tip is shown.
-- Restoring: Setup / summary dock the pop-out back, or re-center an installed window that is strip-sized.
+- Restoring: Setup / summary dock a floating card or pop-out back, then re-center an installed window that is
+  strip-sized.
 
 ### Teams
 

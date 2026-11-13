@@ -228,10 +228,6 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 /* ---------- pop-out (floating window) ---------- */
 .popped { max-width: 520px; margin: 14vh auto 0; padding: 0 20px; }
 .popped .panel { text-align: center; display: grid; gap: 14px; justify-items: center; }
-.popped .dbg { font-size: .7rem; color: var(--muted); text-align: left; max-width: 100%; overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; }
-.popped .dbg:empty { display: none; }
-.pip-hint { position: sticky; top: 0; z-index: 40; padding: 7px 12px; background: var(--warn); color: #1b1300; font-size: .78rem; font-weight: 700; text-align: center; }
-.pip-hint[hidden] { display: none; }
 .pop-btn { display: inline-flex; align-items: center; gap: 6px; }
 .pop-btn svg { flex: none; }
 .top-actions .btn { white-space: nowrap; }
@@ -352,11 +348,9 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
     <h1>Huddle in progress</h1>
     <p class="sub">The timer is in its own floating strip above your other windows.</p>
     <button class="btn primary big" data-action="popIn">Bring it back here</button>
-    <p id="dbg" class="dbg"></p>
   </div>
 </div>
 <div id="shell">
-<div id="pipHint" class="pip-hint" role="status" hidden></div>
 <div class="app">
   <div id="app"></div>
   <p class="foot">Runs entirely in your browser &mdash; names and photos never leave this computer.</p>
@@ -626,9 +620,10 @@ const ICON_IN = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="tr
 const ICON_SHUFFLE = `<svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5h2.2c1.4 0 2.4.6 3.2 1.8l1.2 1.9c.8 1.2 1.8 1.8 3.2 1.8h3.2M1.5 11.5h2.2c1.4 0 2.4-.6 3.2-1.8M14.5 4.5h-3.2c-1.4 0-2.4.6-3.2 1.8M12.5 2.5l2 2-2 2M12.5 9.5l2 2-2 2"/></svg>`;
 
 function headerHTML() {
-  const popBtn = pip
-    ? `<button class="btn pop-btn" data-action="popIn" title="Bring the timer back to the main window" aria-label="Dock back">${ICON_IN}<span class="pop-txt">Dock back</span></button>`
-    : canPop() ? `<button class="btn pop-btn" data-action="popOut" title="Float the timer above your other windows" aria-label="Pop out">${ICON_OUT}<span class="pop-txt">Pop out</span></button>` : '';
+  const installed = isInstalled();
+  const popBtn = pip || floating()
+    ? `<button class="btn pop-btn" data-action="popIn" title="${installed ? 'Put the window back where it was' : 'Bring the timer back to the main window'}" aria-label="Dock back">${ICON_IN}<span class="pop-txt">Dock back</span></button>`
+    : (installed || canPop()) ? `<button class="btn pop-btn" data-action="popOut" title="${installed ? 'Shrink into a small floating card (Dock back undoes it)' : 'Float the timer above your other windows'}" aria-label="Pop out">${ICON_OUT}<span class="pop-txt">Pop out</span></button>` : '';
   let right = '';
   if (state.screen === 'huddle') right = `<button class="btn" data-action="goSetup">Setup</button><button class="btn danger" data-action="endHuddle">End huddle</button>`;
   else if (state.screen === 'setup' && state.huddle && !state.huddle.endedAt) right = `<button class="btn primary" data-action="backToHuddle">Back to huddle</button>`;
@@ -1132,19 +1127,23 @@ listen('keydown', e => {
 
 /* =====================================================================
    Windows: centered setup -> narrow side strip -> back again.
-   - Installed app window: resize + move the window itself (Chrome/Edge allow this for installed apps).
-   - Otherwise: float the timer in an always-on-top pop-out window (Chrome / Edge "Document Picture-in-Picture").
-     The whole UI (#shell) is moved into that window and moved back when it closes; app state stays here.
+   - Installed app window: resize + move that one window (Chrome/Edge allow this for installed apps).
+     "Pop out" shrinks it into a small floating card; "Dock back" puts it back exactly where it was. Never a second window.
+   - Normal browser tab (Chrome / Edge): a tab can't be resized, so the only way to get a small window is a floating
+     pop-out window ("Document Picture-in-Picture", always on top). The whole UI (#shell) moves into it and back.
    - Anywhere else (e.g. Safari): nothing moves; the layout simply adapts if you make the window narrow.
    ===================================================================== */
-const STRIP_W = 360, STRIP_MAX = 600;
+const STRIP_W = 360, STRIP_MAX = 600, FLOAT_KEY = 'huddle-timer/float';
 const shell = $('#shell');
 const away = $('#away');
-let pip = null;                                  // the pop-out window while it is open
-let popHome = null, tuckTimer = 0, tuckTries = 0;   // where the strip window was before it tucked itself under the pop-out
+let pip = null;                                  // the pop-out window (browser-tab case) while it is open
+let floatHome = null;                            // installed app: where the window was before it became a floating card
+const floating = () => !!floatHome;
 const canPop = () => 'documentPictureInPicture' in window;
 const isInstalled = () => ['standalone', 'minimal-ui', 'window-controls-overlay'].some(m => matchMedia(`(display-mode: ${m})`).matches);
 const screenBox = () => { const s = window.screen; return { x: s.availLeft || 0, y: s.availTop || 0, w: s.availWidth, h: s.availHeight }; };
+const hasScreen = b => b.w >= 500 && b.h >= 400;                   // ignore a nonsense screen size
+const placeWindow = (x, y, w, h) => { try { window.resizeTo(w, h); window.moveTo(x, y); } catch (e) { /* not allowed here */ } };
 
 // The clock ticks from whichever window shows the UI, because a hidden main window gets its timers throttled.
 let ticker = { win: null, id: 0 };
@@ -1156,107 +1155,83 @@ function startTicker() {
   ticker = { win: w, id: w.setInterval(tick, 100) };
 }
 
-async function popOut() {
+// ---- Installed app: one window, two shapes -------------------------------------------------------------
+function loadFloat() {
+  try { const f = JSON.parse(localStorage.getItem(FLOAT_KEY)); return f && [f.x, f.y, f.w, f.h].every(Number.isFinite) ? f : null; } catch (e) { return null; }
+}
+function floatWindow() {
+  if (floatHome) return;
+  const b = screenBox();
+  floatHome = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight };
+  const saved = loadFloat();                                       // the card goes where you last left it
+  const w = saved ? saved.w : 520, h = saved ? saved.h : clamp(Math.round(b.h * 0.62), 520, 700);
+  const x = saved ? saved.x : b.x + b.w - w - 24, y = saved ? saved.y : b.y + 60;
+  if (hasScreen(b)) placeWindow(clamp(x, b.x, b.x + b.w - w), clamp(y, b.y, b.y + b.h - h), w, h);
+  render();
+}
+function dockWindow() {
+  if (!floatHome) return;
+  const home = floatHome; floatHome = null;
+  try { localStorage.setItem(FLOAT_KEY, JSON.stringify({ x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight })); } catch (e) { /* fine */ }
+  placeWindow(home.x, home.y, home.w, home.h);                     // back exactly where it was
+  render();
+}
+
+// ---- Normal browser tab: the floating pop-out window ----------------------------------------------------
+async function popOutPip() {
   if (pip || !canPop()) return;
   try {
     const b = screenBox();
-    // Remember where this window is. If it is an installed strip, it tucks itself away underneath the pop-out (see
-    // tuck) and returns here on Dock back, so only the floating window is ever visible.
-    const home = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight, iw: window.innerWidth, ih: window.innerHeight };
-    // Installed app: ask for a floating window at least as big as this window's OUTER size right now, so this window can
-    // fit exactly underneath it. Chrome normally reuses the previous pop-out's size AND position and ignores ours; that is
-    // fine: it keeps the window on screen, and once a click inside the pop-out lets us resize it (see tuck), Chrome
-    // remembers the bigger size for next time. (Don't use preferInitialWindowPlacement: it can leave the window hanging
-    // off the screen edge, where the strip can't follow.)
-    const w = await window.documentPictureInPicture.requestWindow(isInstalled()
-      ? { width: clamp(home.w + 6, 520, 700), height: clamp(home.h, 400, Math.max(400, b.h - 60)) }
-      : { width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
+    const w = await window.documentPictureInPicture.requestWindow({ width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
     pip = w;
     w.document.documentElement.lang = 'en';
     w.document.head.append(document.head.querySelector('style').cloneNode(true));
     LISTENERS.forEach(([type, fn]) => w.document.addEventListener(type, fn));
-    for (const t of ['pointerdown', 'click', 'keydown']) w.document.addEventListener(t, tuck);   // a click or key inside the pop-out lets the browser accept a resize of the pop-out itself
     w.document.body.append(shell);
     doc = w.document;
     away.hidden = false;
     startTicker();
-    w.addEventListener('pagehide', popIn);       // fires when the pop-out window is closed or sent back by the browser
+    w.addEventListener('pagehide', popInPip);    // fires when the pop-out window is closed or sent back by the browser
     render();
-    // Chrome decides where the pop-out goes (a page can't set its position), so an installed window hides itself instead.
-    if (isInstalled()) { popHome = home; tuckTries = 0; tuck(); tuckTimer = w.setInterval(tuck, 50);   // 50 ms timer as a backup...
-      const follow = () => { if (pip === w) { tuck(); w.requestAnimationFrame(follow); } };    // ...and every frame, so the hidden window keeps up when you drag the pop-out
-      w.requestAnimationFrame(follow); }
   } catch (e) { pip = null; doc = document; toast("Couldn't open the floating window here."); }
 }
-
-// Browsers won't let a page minimize or hide its own window, so an installed strip hides by resizing and moving itself
-// to sit exactly underneath the (always-on-top) pop-out, and it follows if you drag or resize the pop-out.
-function tuck(ev) {
-  if (!pip || !popHome) return;
-  const fromClick = !!(ev && /^(click|pointerdown|keydown)$/.test(ev.type));
-  const note = msg => { const d = away.querySelector('#dbg'); if (d && d.textContent !== msg) d.textContent = msg; };   // small status line on the strip's placeholder
-  const hint = msg => { const h = shell.querySelector('#pipHint'); if (!h) return; h.hidden = !msg; if (msg && h.textContent !== msg) h.textContent = msg; };   // yellow bar inside the pop-out
-  const box = (x, y, w, h) => `${Math.round(x)},${Math.round(y)} ${Math.round(w)}×${Math.round(h)}`;
-  try {
-    const x = pip.screenX ?? pip.screenLeft, y = pip.screenY ?? pip.screenTop;
-    const w = pip.outerWidth, h = pip.outerHeight;
-    if (![x, y, w, h].every(Number.isFinite) || w < 100 || h < 100) { note(`Not hiding the strip: the browser doesn't report the pop-out's position (${x}, ${y}, ${w}×${h}).`); return; }
-    const here = { x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight };
-    const near = (a, b) => Math.abs(a - b) <= 3;
-    if (near(here.x, x) && near(here.y, y) && near(here.w, w) && near(here.h, h)) { hint(''); note(`Strip hidden under the pop-out (${box(x, y, w, h)}).`); return; }
-    // Why isn't it hidden yet? Tell the person what to do in the pop-out itself, where they are looking.
-    const sb = screenBox();
-    const offscreen = sb.w >= 500 && (x < sb.x - 3 || y < sb.y - 3 || x + w > sb.x + sb.w + 3);
-    hint(offscreen ? 'This window is partly off the screen. Drag it fully onto the screen so the other window can hide behind it.'
-      : (here.w > w + 3 || here.h > h + 3) ? 'Click anywhere in this window once to finish hiding the other one.' : '');
-    tuckTries++;
-    // If this window can't get as small as the pop-out (it has a minimum size), grow the pop-out instead (the browser only
-    // allows that right after a click inside the pop-out, so this is also retried from its click handler).
-    if ((here.w > w + 3 || here.h > h + 3) && (fromClick || tuckTries <= 2)) { try { pip.resizeTo(Math.max(w, here.w), Math.max(h, here.h)); } catch (e) { /* needs a click in the pop-out */ } }
-    window.resizeTo(w, h);        // the strip is an app window, so it may move and resize itself
-    window.moveTo(x, y);
-    note(`Hiding the strip, try ${tuckTries}: pop-out is at ${box(x, y, w, h)}, strip was at ${box(here.x, here.y, here.w, here.h)}.`);
-  } catch (e) { note('Hiding the strip failed: ' + (e && e.message)); }
-}
-
-function popIn() {
+function popInPip() {
   if (!pip) return;
-  const w = pip, back = popHome;
-  try { w.clearInterval(tuckTimer); } catch (e) { /* window already gone */ }
-  tuckTimer = 0; popHome = null;
-  const d = away.querySelector('#dbg'); if (d) d.textContent = '';
-  const ph = shell.querySelector('#pipHint'); if (ph) ph.hidden = true;
+  const w = pip;
   pip = null; doc = document;
   document.body.append(shell);
   away.hidden = true;
   startTicker();
   render();
-  if (back) { try { window.resizeTo(back.w, back.h); window.moveTo(back.x, back.y); } catch (e) { /* not allowed here */ } }   // back exactly where it was
   try { w.close(); } catch (e) { /* already closed */ }
 }
 
+// The header button and the "Bring it back here" button.
+function popOut() { if (isInstalled()) floatWindow(); else popOutPip(); }
+function popIn() { if (floatHome) dockWindow(); else popInPip(); }
+
 // Called when a huddle starts (from the Start huddle click) or is resumed after a refresh (no click: gesture = false).
 async function enterStrip({ gesture = true } = {}) {
-  if (!state.data.settings.autoStrip || pip) return;
+  if (!state.data.settings.autoStrip || pip || floatHome) return;
   if (isInstalled()) {
     if (window.outerWidth <= STRIP_MAX) return;                       // already a strip
     const b = screenBox();
-    if (b.w >= 500 && b.h >= 400) { try { window.resizeTo(STRIP_W, b.h); window.moveTo(b.x + b.w - STRIP_W, b.y); } catch (e) { /* not allowed here */ } }
+    if (hasScreen(b)) placeWindow(b.x + b.w - STRIP_W, b.y, STRIP_W, b.h);
     await sleep(300);
     if (window.outerWidth <= STRIP_MAX) return;                       // it worked
   }
   if (!gesture) return;
-  if (canPop()) await popOut();
+  if (canPop()) await popOutPip();                                    // the window can't be resized: float a pop-out instead
   else if (!ui.tipShown) { ui.tipShown = true; toast('Tip: make this window narrow and put it beside Planner.'); }
 }
 
-// Called for Setup / summary: dock the pop-out back, or restore a centered window if the installed app is a narrow strip.
+// Called for Setup / summary: put a floating card or pop-out back, and re-center an installed window that is strip-sized.
 function leaveStrip() {
-  const wasTucked = !!popHome;
-  if (pip) popIn();
-  if (isInstalled() && (wasTucked || window.outerWidth <= STRIP_MAX)) {
+  const wasFloating = !!floatHome;
+  if (floatHome) dockWindow(); else if (pip) popInPip();
+  if (isInstalled() && (wasFloating || window.outerWidth <= STRIP_MAX)) {
     const b = screenBox(), w = Math.min(980, b.w - 80), h = Math.min(860, b.h - 80);
-    if (b.w >= 500 && b.h >= 400) { try { window.resizeTo(w, h); window.moveTo(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2)); } catch (e) { /* not allowed here */ } }
+    if (hasScreen(b)) placeWindow(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2), w, h);
   }
 }
 
