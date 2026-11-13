@@ -89,13 +89,15 @@ You can turn the automatic move off under Setup > More options.
 - **Opens centered (installed app):** the installed app opens as a normal centered window for Setup. Setup
   and the summary are always normal centered windows.
 - **Docked (the default during a huddle):** when you press Start huddle, the window resizes and snaps to the
-  right edge of the screen, full height, as a strip. It is locked there: if you drag or resize it, it snaps
-  straight back as soon as you let go. (A web page can't truly freeze its own window, so letting go is when it
+  right edge of the screen, full height, as a strip. It is locked there: a resize is refused on the spot, and
+  if you drag it away it snaps straight back as soon as you let go. (A web page can't truly freeze its own window, so letting go is when it
   moves back. It never fights you while you drag, so nothing flickers.)
 - **Pop out:** turns the same window into a small square window of **fixed size** (520 x 520), with a
   condensed view: the speaker, the clock, Pause / Done, and chips for the next four people (+N more). You can
-  move it anywhere, but not resize it: if you resize it, it snaps back to that size when you let go.
-  It remembers where you last put it.
+  move it anywhere, but resizing is refused: the moment you try (from an edge or a corner), the size goes
+  straight back, so the window just won't grow or shrink. It remembers where you last put it. (A web page
+  can't remove a window's edges or its maximize button, so you may see it twitch while you try, and maximizing
+  may not be blocked.)
 - **Snap to side** (the same icon, while popped out): snaps the window back to the right edge of whichever
   screen it is on and locks it again. To move the strip to another monitor, press Pop out, drag it there,
   then press Snap to side.
@@ -164,7 +166,10 @@ older "spin" version (a person in a `landed` phase) are converted on load.
   (windows can't be narrower than ~500 px, so it differs from the 360 px requested). `enforceWindow()` runs every
   150 ms while locked: in `'dock'` any change from `lockBase`, in `'card'` only a change of size, is noticed;
   it waits until two polls in a row see the same rectangle (the person stopped dragging / resizing), then calls
-  `resizeTo` (+ `moveTo` when docked) once to put it back, giving up after 5 tries (e.g. maximized). `popOutCard()`
+  `resizeTo` (+ `moveTo` when docked) once to put it back, giving up after 5 tries (e.g. maximized). Resizes are
+  refused immediately by `onWindowResize()` (a `resize` event listener): it restores the size, and the position
+  too (`lockBase` when docked, `cardPos` = the card's last position while its size was right, because dragging the
+  left or top edge also shifts the window). Moves fire no event, so those are caught by the watcher. `popOutCard()`
   makes the 520 x 520 card (position from `huddle-timer/float` in `localStorage`, else top-right) and adds the
   `is-card` class for the condensed layout; `dockSide()` saves the card's position and docks again. The app also
   calls `centerWindow()` at launch and for Setup / summary. This replaced earlier designs that used a Document

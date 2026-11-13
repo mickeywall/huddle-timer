@@ -1155,6 +1155,7 @@ const away = $('#away');
 let pip = null;                                  // the pop-out window (browser-tab case) while it is open
 let winMode = null;                              // installed app during a huddle: 'dock' | 'card' | null
 let lockBase = null, lockTimer = 0, lockLast = '', lockTries = 0;   // the window's home rectangle and the snap-back watcher
+let cardPos = null;                              // the card's last position while its size was right (so a refused resize can't shift it)
 const canPop = () => 'documentPictureInPicture' in window;
 const isInstalled = () => ['standalone', 'minimal-ui', 'window-controls-overlay'].some(m => matchMedia(`(display-mode: ${m})`).matches);
 const screenBox = () => { const s = window.screen; return { x: s.availLeft || 0, y: s.availTop || 0, w: s.availWidth, h: s.availHeight }; };
@@ -1176,7 +1177,7 @@ function startTicker() {
 
 // ---- Installed app: docked strip <-> small fixed-size card ---------------------------------------------
 function startLock() { if (!lockTimer) lockTimer = setInterval(enforceWindow, 150); }
-function stopLock() { clearInterval(lockTimer); lockTimer = 0; lockBase = null; lockLast = ''; lockTries = 0; }
+function stopLock() { clearInterval(lockTimer); lockTimer = 0; lockBase = null; lockLast = ''; lockTries = 0; cardPos = null; }
 
 // Whatever size and spot the browser settles on (a window has a minimum size) becomes the window's home.
 async function settleHome() { await sleep(350); lockBase = curRect(); lockTries = 0; lockLast = ''; }
@@ -1192,6 +1193,7 @@ async function snapToSide() {
 function enforceWindow() {
   if (!winMode || !lockBase) return;
   const cur = curRect();
+  if (winMode === 'card' && sameSize(cur, lockBase)) cardPos = { x: cur.x, y: cur.y };     // remember where the card is while it is moved
   if (winMode === 'dock' ? sameRect(cur, lockBase) : sameSize(cur, lockBase)) { lockLast = ''; lockTries = 0; return; }
   const key = [cur.x, cur.y, cur.w, cur.h].join();
   if (key !== lockLast) { lockLast = key; return; }                 // still being dragged or resized: wait for it to stop
@@ -1200,6 +1202,19 @@ function enforceWindow() {
   if (winMode === 'dock') placeWindow(lockBase.x, lockBase.y, lockBase.w, lockBase.h);
   else { try { window.resizeTo(lockBase.w, lockBase.h); } catch (e) { /* not allowed here */ } }   // the card keeps wherever you put it
 }
+
+// A resize is refused the moment it happens (the page can't remove the window's edges, but it can put the size
+// straight back, and for the card also its position, which a drag from the left or top edge would shift).
+// Moving the docked window can't be seen as it happens, so that is handled by the watcher above, after you let go.
+function onWindowResize() {
+  if (!winMode || !lockBase || sameSize(curRect(), lockBase)) return;
+  try {
+    window.resizeTo(lockBase.w, lockBase.h);
+    if (winMode === 'dock') window.moveTo(lockBase.x, lockBase.y);
+    else if (cardPos) window.moveTo(cardPos.x, cardPos.y);
+  } catch (e) { /* not allowed here */ }
+}
+window.addEventListener('resize', onWindowResize);
 
 function loadFloat() {
   try { const f = JSON.parse(localStorage.getItem(FLOAT_KEY)); return f && Number.isFinite(f.x) && Number.isFinite(f.y) ? f : null; } catch (e) { return null; }
@@ -1214,6 +1229,7 @@ async function popOutCard() {
     placeWindow(clamp(x, b.x, b.x + b.w - CARD_W), clamp(y, b.y, b.y + b.h - CARD_H), CARD_W, CARD_H);
     await settleHome();
   } else lockBase = curRect();
+  if (lockBase) cardPos = { x: lockBase.x, y: lockBase.y };
   if (winMode === 'card') startLock();
 }
 // "Snap to side": remember where the card was, then dock on the right edge of whichever screen it is on.
