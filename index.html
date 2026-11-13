@@ -64,6 +64,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn.link { background: none; border: 0; padding: 4px 6px; color: var(--muted); font-weight: 500; font-size: .85rem; text-decoration: underline; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn kbd { margin-left: 10px; font: inherit; font-size: .65em; opacity: .75; border: 1px solid currentColor; border-radius: 6px; padding: 1px 7px; vertical-align: middle; }
+.btn .ellip { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn.flexy { display: inline-flex; align-items: center; justify-content: center; gap: 8px; max-width: 100%; }
 input[type=text], input[type=number] { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; min-width: 0; }
 input[type=number] { width: 5.2rem; text-align: center; }
 input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
@@ -103,7 +105,10 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 details { border-top: 1px solid var(--line); padding: 14px 0; }
 summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .opts { display: grid; gap: 12px; padding-top: 14px; }
-.opts label { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.opts label { display: flex; align-items: center; gap: 10px; }
+.opts label span { min-width: 0; }
+.opts label.inline { flex-wrap: wrap; }
+.opts input[type=checkbox] { flex: none; }
 .backup { border-top: 1px solid var(--line); padding: 16px 0; display: grid; gap: 10px; }
 .backup .btns { display: flex; gap: 10px; flex-wrap: wrap; }
 .start-bar { border-top: 1px solid var(--line); padding-top: 22px; display: flex; justify-content: center; }
@@ -119,30 +124,29 @@ summary { cursor: pointer; font-weight: 600; color: var(--muted); }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center;
   transition: background .4s, border-color .4s;
 }
-.stage[data-level=ready] { border-color: var(--accent); }
 .stage[data-level=ok] { border-color: color-mix(in srgb, var(--good) 70%, var(--line)); }
 .stage[data-level=warn] { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 11%, var(--panel)); }
 .stage[data-level=over] { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 17%, var(--panel)); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 transparent, var(--shadow); } 50% { box-shadow: 0 0 70px 4px color-mix(in srgb, var(--bad) 40%, transparent), var(--shadow); } }
 
-.reel { --rowh: 116px; position: relative; width: min(100%, 540px); height: calc(var(--rowh) * 3); border-radius: 26px; background: var(--panel2); border: 3px solid var(--line); overflow: hidden; box-shadow: inset 0 0 40px rgba(0, 0, 0, .22); }
-.reel::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(to bottom, var(--panel2) 0, transparent 34%, transparent 66%, var(--panel2) 100%); opacity: .93; }
-.reel::after { content: ""; position: absolute; left: 0; right: 0; top: var(--rowh); height: var(--rowh); z-index: 3; pointer-events: none; border-top: 3px solid var(--accent); border-bottom: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.pt { position: absolute; top: calc(var(--rowh) * 1.5 - 13px); width: 0; height: 0; border: 13px solid transparent; z-index: 4; }
-.pt.l { left: 0; border-left-color: var(--accent); border-right-width: 0; }
-.pt.r { right: 0; border-right-color: var(--accent); border-left-width: 0; }
-.reel-track { will-change: transform; }
-.reel-row { height: var(--rowh); display: flex; align-items: center; gap: 22px; padding: 0 34px; font-size: clamp(24px, 6cqw, 40px); font-weight: 700; text-align: left; }
-.reel-row .rname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.reel-row.hit { animation: pop .55s ease-out; background: color-mix(in srgb, var(--accent) 20%, transparent); }
-@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.07); } 100% { transform: scale(1); } }
-.spin-btn { width: min(100%, 380px); padding: 18px 30px; font-size: 2rem; font-weight: 800; letter-spacing: .16em; border-radius: 20px; box-shadow: 0 8px 0 color-mix(in srgb, var(--accent) 55%, #000); }
-.spin-btn:active { transform: translateY(5px); box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 55%, #000); }
-.hint { color: var(--muted); font-size: .92rem; }
+/* before the first turn: randomize, then the numbered order */
+.prep { width: 100%; max-width: 560px; display: grid; gap: 14px; justify-items: stretch; }
+.prep h2 { margin: 0; font-size: clamp(1.4rem, 6cqw, 2.1rem); }
+.prep .lead { color: var(--muted); }
+.prep .btn.big { width: 100%; }
+.order { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; text-align: left; }
+.order li { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
+.order .num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+.order .oname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 1.05rem; }
+.order.fresh li { animation: settle .4s ease-out both; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes settle { from { transform: translateY(-8px) scale(.97); opacity: .3; } to { transform: none; opacity: 1; } }
+.stage.shuffling .btn { opacity: .5; pointer-events: none; }
+.x { flex: none; border: 0; background: none; color: var(--muted); width: 28px; height: 28px; border-radius: 8px; font-size: .95rem; }
+.x:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
 
+/* during a turn */
 .who { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 100%; }
 .who .avatar { border: 6px solid var(--line); transition: border-color .4s; }
-.stage[data-level=ready] .who .avatar { border-color: var(--accent); }
 .stage[data-level=ok] .who .avatar { border-color: var(--good); }
 .stage[data-level=warn] .who .avatar { border-color: var(--warn); }
 .stage[data-level=over] .who .avatar { border-color: var(--bad); }
@@ -156,7 +160,7 @@ summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .bar { width: min(100%, 640px); height: 14px; border-radius: 999px; background: var(--panel2); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 999px; transition: width .12s linear, background .4s; }
 .stage[data-level=ok] .bar i { background: var(--good); } .stage[data-level=warn] .bar i { background: var(--warn); } .stage[data-level=over] .bar i { background: var(--bad); }
-.actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+.actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; max-width: 100%; }
 .all-done { display: grid; gap: 16px; justify-items: center; }
 .all-done .emoji { font-size: 5rem; line-height: 1; }
 .all-done h2 { margin: 0; font-size: 2.2rem; }
@@ -166,9 +170,13 @@ summary { cursor: pointer; font-weight: 600; color: var(--muted); }
 .meta .lbl { display: block; color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
 .meta b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.list li { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.list li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 6px; border-radius: 12px; }
+.list li.next { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .list .lname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .list .ltime { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.lnum { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .72rem; background: var(--panel2); color: var(--muted); font-variant-numeric: tabular-nums; }
+.list li.next .lnum { background: var(--accent); color: var(--accent-ink); }
+.nbadge { flex: none; font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
 
 /* ---------- summary ---------- */
 .summary { max-width: 780px; margin: 0 auto; }
@@ -203,21 +211,19 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .stats { grid-template-columns: 1fr; }
   .res { grid-template-columns: 1fr auto; } .res .badge { grid-column: 1 / -1; }
   .stage { padding: 18px; min-height: 520px; }
-  .reel { --rowh: 96px; }
 }
 
 /* ---------- pop-out (floating window) ---------- */
-.away { max-width: 520px; margin: 14vh auto 0; padding: 0 20px; }
-.away .panel { text-align: center; display: grid; gap: 14px; justify-items: center; }
+.popped { max-width: 520px; margin: 14vh auto 0; padding: 0 20px; }
+.popped .panel { text-align: center; display: grid; gap: 14px; justify-items: center; }
 .pop-btn { display: inline-flex; align-items: center; gap: 6px; }
 .pop-btn svg { flex: none; }
 .top-actions .btn { white-space: nowrap; }
 @media (max-width: 400px) { .brand-name { display: none; } }
 
-/* ---------- narrow "strip" window (e.g. docked beside Planner): fit everything without scrolling ---------- */
+/* ---------- narrow "strip" window (docked beside Planner): fit everything without scrolling ---------- */
 @media (display-mode: standalone) { .foot { display: none; } }
-.list.cols { grid-template-columns: 1fr; }
-@media (max-width: 460px) {
+@media (max-width: 520px) {
   .app { padding: 6px 8px 14px; }
   .foot { display: none; }
   .top { padding: 2px 0 8px; min-height: 0; gap: 8px; }
@@ -228,13 +234,17 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .pop-btn .pop-txt { display: none; }
   .top-actions .pop-btn { padding: 6px 9px; }
   .btn.big { padding: 12px 16px; font-size: 1.05rem; border-radius: 14px; }
+  .btn kbd { display: none; }
   .huddle { gap: 10px; }
   .stage { min-height: 0; padding: 14px 12px; gap: 10px; border-radius: 20px; border-width: 2px; }
-  .reel { --rowh: 70px; border-radius: 18px; border-width: 2px; }
-  .reel-row { gap: 12px; padding: 0 16px; font-size: 21px; }
-  .avatar.m { --s: 46px; }
-  .pt { border-width: 9px; top: calc(var(--rowh) * 1.5 - 9px); }
-  .spin-btn { font-size: 1.5rem; padding: 12px 20px; letter-spacing: .14em; border-radius: 16px; box-shadow: 0 5px 0 color-mix(in srgb, var(--accent) 55%, #000); }
+  .stage.turn { position: sticky; top: 0; z-index: 5; }
+  .prep { gap: 10px; }
+  .prep h2 { font-size: 1.25rem; }
+  .order { gap: 6px; }
+  .order li { padding: 5px 6px 5px 10px; gap: 8px; border-radius: 12px; }
+  .order .num { width: 24px; height: 24px; font-size: .78rem; }
+  .order .oname { font-size: .98rem; }
+  .order .avatar.s { --s: 34px; }
   .who { gap: 4px; }
   .who .avatar { border-width: 4px; }
   .avatar.xl { --s: clamp(60px, 24cqw, 96px); }
@@ -249,14 +259,13 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
   .card { padding: 10px 12px; border-radius: 14px; }
   .card h3 { margin-bottom: 6px; }
   .meta b { font-size: 1.15rem; }
-  .list { gap: 6px; }
-  .list.cols { grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  .list { gap: 4px; }
   .panel { padding: 14px; border-radius: 18px; }
   h1 { font-size: 1.4rem; }
   .sub { margin-bottom: 14px; font-size: .9rem; }
   .add { flex-wrap: wrap; }
   .set-row > strong { min-width: 0; width: 100%; }
-  /* one line per person: avatar | name | here-today tick | remove; "remove photo" drops under the name */
+  /* setup, one line per person: avatar | name | here-today tick | remove; "remove photo" drops under the name */
   .person { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 4px 8px; padding: 6px 8px; }
   .person .here { grid-column: 3; grid-row: 1; }
   .here-txt { display: none; }
@@ -272,10 +281,10 @@ dialog p { margin-bottom: 20px; font-size: 1.05rem; }
 </style>
 </head>
 <body>
-<div id="away" class="away" hidden>
+<div id="away" class="popped" hidden>
   <div class="panel">
-    <h1>Popped out</h1>
-    <p class="sub">The Huddle Timer is floating in its own window above your other windows.</p>
+    <h1>Huddle in progress</h1>
+    <p class="sub">The timer is in its own floating strip above your other windows.</p>
     <button class="btn primary big" data-action="popIn">Bring it back here</button>
   </div>
 </div>
@@ -314,6 +323,8 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const toInt = (v, d) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? n : d; };
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const randInt = n => { const a = new Uint32Array(1); crypto.getRandomValues(a); return Math.floor(a[0] / 4294967296 * n); };
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = randInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const fmtSecs = s => { const a = Math.abs(Math.round(s)); return Math.floor(a / 60) + ':' + String(a % 60).padStart(2, '0'); };
 // Countdown display. ceil() makes it read 0:00 at the instant time is up, then -0:01 after a full second over.
@@ -335,7 +346,7 @@ const avatar = (p, size) => p.photo
    ===================================================================== */
 const KEY = 'huddle-timer/v1';
 const SKEY = 'huddle-timer/session/v1';
-const DEFAULTS = { seconds: 120, warnSec: 30, sound: true, autoStart: false };
+const DEFAULTS = { seconds: 120, warnSec: 30, sound: true, autoStrip: true };
 const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 const idOk = v => typeof v === 'string' && /^[\w-]{1,40}$/.test(v);
 
@@ -357,7 +368,7 @@ function cleanData(raw) {
   out.settings.seconds = clamp(toInt(s.seconds, DEFAULTS.seconds), 5, 3600);
   out.settings.warnSec = clamp(toInt(s.warnSec, DEFAULTS.warnSec), 0, 600);
   out.settings.sound = s.sound !== false;
-  out.settings.autoStart = s.autoStart === true;
+  out.settings.autoStrip = s.autoStrip !== false;
   return out;
 }
 
@@ -368,9 +379,11 @@ function sanitizeHuddle(h) {
   const arr = v => Array.isArray(v) ? v.slice(0, 300) : [];
   const out = {
     startedAt: h.startedAt,
+    beganAt: Number.isFinite(h.beganAt) ? h.beganAt : null,        // when the first person's turn started
     endedAt: Number.isFinite(h.endedAt) ? h.endedAt : null,
     durationSec: clamp(h.durationSec, 5, 3600),
     warnSec: clamp(num(h.warnSec, 30), 0, 600),
+    ordered: h.ordered === true,                                    // has the order been randomized yet?
     queue: arr(h.queue).filter(idOk),
     log: arr(h.log).filter(r => r && idOk(r.id)).map(r => ({ id: r.id, name: str(r.name), allotted: num(r.allotted), used: num(r.used) })),
     notHere: arr(h.notHere).filter(r => r && idOk(r.id)).map(r => ({ id: r.id, name: str(r.name) })),
@@ -378,20 +391,22 @@ function sanitizeHuddle(h) {
     current: null
   };
   const c = h.current;
-  if (c && idOk(c.id) && ['landed', 'running', 'paused'].includes(c.phase)) {
-    out.current = {
-      id: c.id, name: str(c.name), phase: c.phase,
-      startedAt: Number.isFinite(c.startedAt) ? c.startedAt : null,
-      pausedAt: Number.isFinite(c.pausedAt) ? c.pausedAt : null,
-      pausedMs: Math.max(0, num(c.pausedMs)), warned: !!c.warned, buzzed: !!c.buzzed
-    };
-    if (out.current.phase !== 'landed' && !out.current.startedAt) out.current.phase = 'landed';
-    if (out.current.phase === 'paused' && !out.current.pausedAt) out.current.phase = 'running';
+  if (c && idOk(c.id) && ['running', 'paused', 'landed'].includes(c.phase)) {
+    if (c.phase === 'landed' || !Number.isFinite(c.startedAt)) {   // older saved format: they never started, so put them back first in line
+      out.queue.unshift(c.id); out.ordered = true;
+    } else {
+      out.current = {
+        id: c.id, name: str(c.name), phase: c.phase === 'paused' && Number.isFinite(c.pausedAt) ? 'paused' : 'running',
+        startedAt: c.startedAt, pausedAt: Number.isFinite(c.pausedAt) ? c.pausedAt : null,
+        pausedMs: Math.max(0, num(c.pausedMs)), warned: !!c.warned, buzzed: !!c.buzzed
+      };
+    }
   }
+  if (out.log.length || out.current) out.ordered = true;
   return out;
 }
 
-const ui = { spinning: false, storageOk: true, photoFor: null, reelIdle: 0 };
+const ui = { busy: false, fresh: false, storageOk: true, photoFor: null, tipShown: false };
 
 function loadData() {
   try { const raw = localStorage.getItem(KEY); if (raw) return cleanData(JSON.parse(raw)); } catch (e) { ui.storageOk = false; }
@@ -473,7 +488,7 @@ async function holdAwake(on) {
 let toastTimer = 0;
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3600);
 }
 const dlg = $('#dlg');
 function ask(msg, okLabel = 'OK') {
@@ -495,30 +510,29 @@ function elapsedMs(cur, now = Date.now()) {
 }
 function levelOf(h, cur) {
   if (!cur) return 'idle';
-  if (cur.phase === 'landed') return 'ready';
   const rem = h.durationSec * 1000 - elapsedMs(cur);
   if (rem <= 0) return 'over';
   const warn = Math.min(h.warnSec, Math.floor(h.durationSec / 2));
   return warn > 0 && rem <= warn * 1000 ? 'warn' : 'ok';
 }
-const TAGS = { ready: "You're up!", ok: 'Speaking', warn: 'Almost out of time', over: 'Over time' };
+const TAGS = { ok: 'Speaking', warn: 'Almost out of time', over: 'Over time' };
 
 function tick() {
   const h = state.huddle;
   if (state.screen !== 'huddle' || !h) return;
-  const hc = $('#huddleClock'); if (hc) hc.textContent = fmtSecs((Date.now() - h.startedAt) / 1000);
+  const hc = $('#huddleClock'); if (hc) hc.textContent = h.beganAt ? fmtSecs((Date.now() - h.beganAt) / 1000) : '0:00';
   const cur = h.current, stage = $('#stage'), clock = $('#clock');
   if (!cur || !stage || !clock) { if (document.title !== 'Huddle Timer') document.title = 'Huddle Timer'; return; }
 
   const total = h.durationSec * 1000, rem = total - elapsedMs(cur), level = levelOf(h, cur);
-  const text = cur.phase === 'landed' ? fmtSecs(h.durationSec) : fmtClock(rem);
+  const text = fmtClock(rem);
   if (clock.textContent !== text) clock.textContent = text;
   if (stage.dataset.level !== level) stage.dataset.level = level;
   stage.classList.toggle('paused', cur.phase === 'paused');
   const tag = $('#tag'), tagText = cur.phase === 'paused' ? 'Paused' : TAGS[level];
   if (tag && tag.textContent !== tagText) tag.textContent = tagText;
   const fill = $('#barFill');
-  if (fill) fill.style.width = (cur.phase === 'landed' || level === 'over' ? 100 : clamp(rem / total, 0, 1) * 100) + '%';
+  if (fill) fill.style.width = (level === 'over' ? 100 : clamp(rem / total, 0, 1) * 100) + '%';
   document.title = `${text} · ${cur.name} – Huddle Timer`;
 
   if (cur.phase === 'running') {
@@ -532,6 +546,7 @@ function tick() {
    ===================================================================== */
 const ICON_OUT = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3.5" width="9" height="9" rx="1.5"/><path d="M8.5 1.5h6v6M14.5 1.5L8 8"/></svg>`;
 const ICON_IN = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M7.5 1.5h-6v6M1.5 1.5L8 8"/></svg>`;
+const ICON_SHUFFLE = `<svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5h2.2c1.4 0 2.4.6 3.2 1.8l1.2 1.9c.8 1.2 1.8 1.8 3.2 1.8h3.2M1.5 11.5h2.2c1.4 0 2.4-.6 3.2-1.8M14.5 4.5h-3.2c-1.4 0-2.4.6-3.2 1.8M12.5 2.5l2 2-2 2M12.5 9.5l2 2-2 2"/></svg>`;
 
 function headerHTML() {
   const popBtn = pip
@@ -581,9 +596,9 @@ function setupHTML() {
     <details>
       <summary>More options</summary>
       <div class="opts">
-        <label><input type="checkbox" data-field="sound" ${settings.sound ? 'checked' : ''}> Play sounds (spin ticks, a beep when time is almost up, and a tone when it runs out)</label>
-        <label><input type="checkbox" data-field="autoStart" ${settings.autoStart ? 'checked' : ''}> Start the timer automatically after the spin</label>
-        <label>Turn yellow when <input type="number" min="0" max="600" value="${settings.warnSec}" data-field="warnSec" aria-label="Warning seconds"> seconds are left</label>
+        <label title="Moves the window to a narrow strip on the right side of the screen when you press Start huddle"><input type="checkbox" data-field="autoStrip" ${settings.autoStrip ? 'checked' : ''}><span>Move to a side strip when the huddle starts</span></label>
+        <label title="A chime when the next person starts, a beep when time is almost up, and a tone when it runs out"><input type="checkbox" data-field="sound" ${settings.sound ? 'checked' : ''}><span>Play sounds</span></label>
+        <label class="inline"><span>Turn yellow when</span><input type="number" min="0" max="600" value="${settings.warnSec}" data-field="warnSec" aria-label="Warning seconds"><span>seconds are left</span></label>
       </div>
     </details>
     <div class="backup">
@@ -594,47 +609,61 @@ function setupHTML() {
   </main>`;
 }
 
-const reelRow = p => `<div class="reel-row">${avatar(p, 'm')}<span class="rname">${esc(p.name)}</span></div>`;
+const orderRow = (p, n, i) => `<li data-id="${p.id}" style="--i:${i}">${n ? `<span class="num">${n}</span>` : ''}${avatar(p, 's')}<span class="oname">${esc(p.name)}</span><button class="x" data-action="skipPerson" aria-label="${esc(p.name)} is not here" title="Not here today">✕</button></li>`;
+const plainRow = p => `<li>${avatar(p, 's')}<span class="oname">${esc(p.name)}</span></li>`;
 
 function stageHTML(h) {
-  const cur = h.current;
+  const cur = h.current, pool = queuePeople();
+
   if (!cur) {
-    const pool = queuePeople();
     if (!pool.length) {
-      return `<section class="stage" id="stage" data-level="idle"><div class="all-done"><div class="emoji" aria-hidden="true">🎉</div><h2>That's everyone!</h2><button class="btn primary big" data-action="finish">See the summary</button></div></section>`;
+      if (h.log.length) return `<section class="stage" id="stage" data-level="idle"><div class="all-done"><div class="emoji" aria-hidden="true">🎉</div><h2>That's everyone!</h2><button class="btn primary big" data-action="finish">See the summary</button></div></section>`;
+      return `<section class="stage" id="stage" data-level="idle"><div class="all-done"><h2>No one is here</h2><p class="muted">Everyone is marked as not here. Add people back, or go to Setup.</p><button class="btn big" data-action="goSetup">Back to setup</button></div></section>`;
     }
-    const n = pool.length, i = ui.reelIdle = randInt(n);
-    const rows = [pool[(i - 1 + n) % n], pool[i], pool[(i + 1) % n]];
-    return `<section class="stage" id="stage" data-level="idle">
-      <div class="reel" aria-hidden="true"><div class="reel-track" id="reelTrack">${rows.map(reelRow).join('')}</div><i class="pt l"></i><i class="pt r"></i></div>
-      <button class="btn primary spin-btn" data-action="spin">SPIN</button>
-      <p class="hint">${n === 1 ? 'Last person!' : n + ' still to go'} &middot; or press Space</p>
-    </section>`;
+    if (!h.ordered) {
+      return `<section class="stage" id="stage" data-level="idle"><div class="prep">
+        <h2>${pool.length} ${pool.length === 1 ? 'person' : 'people'} here today</h2>
+        <p class="lead">Mix up the order so everyone knows when they're up.</p>
+        <button class="btn primary big flexy" data-action="randomize">${ICON_SHUFFLE}<span class="ellip">Randomize order</span><kbd>Space</kbd></button>
+        <ul class="order" id="orderList">${pool.map((p, i) => orderRow(p, 0, i)).join('')}</ul>
+      </div></section>`;
+    }
+    const fresh = ui.fresh; ui.fresh = false;
+    return `<section class="stage" id="stage" data-level="idle"><div class="prep">
+      <h2>Today's order</h2>
+      <button class="btn primary big flexy" data-action="beginHuddle">▶ <span class="ellip">Start – ${esc(pool[0].name)} goes first</span><kbd>Space</kbd></button>
+      <button class="btn flexy" data-action="randomize">${ICON_SHUFFLE}<span class="ellip">Randomize again</span></button>
+      <ol class="order ${fresh ? 'fresh' : ''}" id="orderList">${pool.map((p, i) => orderRow(p, i + 1, i)).join('')}</ol>
+    </div></section>`;
   }
+
   const p = person(cur.id) || { name: cur.name, photo: null };
-  let buttons;
-  if (cur.phase === 'landed') buttons = `<button class="btn primary big" data-action="startTimer">▶ Start timer <kbd>Space</kbd></button><button class="btn big" data-action="skipTurn">Not here – skip</button>`;
-  else if (cur.phase === 'running') buttons = `<button class="btn big" data-action="togglePause">⏸ Pause</button><button class="btn primary big" data-action="doneTurn">Done – next person <kbd>Enter</kbd></button>`;
-  else buttons = `<button class="btn primary big" data-action="togglePause">▶ Resume</button><button class="btn big" data-action="doneTurn">Done – next person</button>`;
+  const next = pool[0];
+  const buttons = (cur.phase === 'paused'
+    ? `<button class="btn primary big" data-action="togglePause">▶ Resume</button>`
+    : `<button class="btn big" data-action="togglePause">⏸ Pause</button>`)
+    + `<button class="btn ${cur.phase === 'paused' ? '' : 'primary '}big flexy" data-action="doneTurn">${next ? `<span class="ellip">Done → ${esc(next.name)}</span>` : 'Done – finish'}<kbd>Enter</kbd></button>`;
   const level = levelOf(h, cur);
-  return `<section class="stage ${cur.phase === 'paused' ? 'paused' : ''}" id="stage" data-level="${level}">
+  return `<section class="stage turn ${cur.phase === 'paused' ? 'paused' : ''}" id="stage" data-level="${level}">
     <div class="who">${avatar(p, 'xl')}<div class="wname">${esc(cur.name)}</div><span class="tag" id="tag">${cur.phase === 'paused' ? 'Paused' : TAGS[level]}</span></div>
-    <div class="clock" id="clock" role="timer" aria-live="off">${fmtSecs(h.durationSec)}</div>
+    <div class="clock" id="clock" role="timer" aria-live="off">${fmtClock(h.durationSec * 1000 - elapsedMs(cur))}</div>
     <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
     <div class="actions">${buttons}</div>
+    <button class="btn link" data-action="skipTurn">${esc(cur.name)} isn't here – skip</button>
   </section>`;
 }
 
 function sideHTML(h) {
-  const pool = queuePeople();
+  const pool = queuePeople(), inTurn = !!h.current;
   const done = h.log.map(r => {
     const diff = r.used - r.allotted;
     return `<li><span class="lname">${esc(r.name)}</span><span class="ltime ${diff > 0 ? 'bad' : 'good'}">${fmtSecs(r.used)}${diff > 0 ? ` (+${fmtSecs(diff)})` : ''}</span></li>`;
   }).join('');
+  const upNext = pool.map((p, i) => `<li data-id="${p.id}" class="${i === 0 ? 'next' : ''}"><span class="lnum">${i + 1}</span>${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span>${i === 0 ? '<span class="nbadge">Next</span>' : ''}<button class="x" data-action="skipPerson" aria-label="${esc(p.name)} is not here" title="Not here today">✕</button></li>`).join('');
   return `<aside class="side">
     <div class="card meta"><div><span class="lbl">Huddle time</span><b id="huddleClock">0:00</b></div><div><span class="lbl">Per person</span><b>${fmtSecs(h.durationSec)}</b></div></div>
-    <div class="card"><h3>Still to go (${pool.length})</h3>${pool.length ? `<ul class="list cols">${pool.map(p => `<li>${avatar(p, 'xs')}<span class="lname">${esc(p.name)}</span></li>`).join('')}</ul>` : '<p class="muted">No one left.</p>'}</div>
-    <div class="card"><h3>Done (${h.log.length})</h3>${done ? `<ul class="list">${done}</ul>` : '<p class="muted">No one yet.</p>'}</div>
+    ${inTurn ? `<div class="card"><h3>Up next (${pool.length})</h3>${pool.length ? `<ol class="list">${upNext}</ol>` : '<p class="muted">That\'s the last one.</p>'}</div>` : ''}
+    ${h.log.length ? `<div class="card"><h3>Done (${h.log.length})</h3><ul class="list">${done}</ul></div>` : ''}
     ${h.notHere.length ? `<div class="card"><h3>Not here (${h.notHere.length})</h3><ul class="list">${h.notHere.map(n => `<li data-id="${n.id}"><span class="lname">${esc(n.name)}</span><button class="btn small" data-action="addBack">Add back</button></li>`).join('')}</ul></div>` : ''}
   </aside>`;
 }
@@ -644,7 +673,7 @@ const huddleHTML = h => `<div class="huddle">${stageHTML(h)}${sideHTML(h)}</div>
 function summarize(h) {
   const used = h.log.map(r => r.used);
   return {
-    length: Math.round(((h.endedAt || Date.now()) - h.startedAt) / 1000),
+    length: Math.round(((h.endedAt || Date.now()) - (h.beganAt || h.startedAt)) / 1000),
     avg: used.length ? Math.round(used.reduce((a, b) => a + b, 0) / used.length) : 0,
     over: h.log.filter(r => r.used > r.allotted),
     date: new Date(h.startedAt).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
@@ -684,79 +713,60 @@ function render() {
 }
 
 /* =====================================================================
-   The slot-machine reel
+   The huddle: randomize the order, then each turn starts automatically
    ===================================================================== */
-function runReel(pool, winnerIdx) {
-  return new Promise(resolve => {
-    const track = $('#reelTrack');
-    if (!track) return resolve();
-    const n = pool.length, i0 = ui.reelIdle % n;
-    // strip[j] = pool[(i0 + j) mod n]; the winner must land at index T, at least ~30 rows from the start.
-    const T = n * Math.ceil(30 / n) + (((winnerIdx - i0) % n) + n) % n;
-    const items = [];
-    for (let j = -1; j <= T + 1; j++) items.push(pool[(((i0 + j) % n) + n) % n]);
-    track.style.transform = 'translateY(0)';
-    track.innerHTML = items.map(reelRow).join('');
-    const w = curWin();   // animate in whichever window currently shows the UI (main or pop-out)
-    const total = items.length, dur = reduced() ? 900 : 3800 + randInt(800), t0 = w.performance.now();
-    let lastRow = 0, lastTick = 0, finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      track.style.transform = `translateY(${(-T / total * 100).toFixed(4)}%)`;
-      track.style.filter = '';
-      const hit = track.children[T + 1]; if (hit) hit.classList.add('hit');
-      setTimeout(resolve, 600);
-    };
-    const frame = now => {
-      if (finished) return;
-      const t = clamp((now - t0) / dur, 0, 1), pos = T * (1 - Math.pow(1 - t, 4));   // ease-out: fast, then slows to a stop
-      track.style.transform = `translateY(${(-pos / total * 100).toFixed(4)}%)`;
-      if (!reduced()) {
-        const speed = T * 4 * Math.pow(1 - t, 3) / (dur / 1000), b = Math.min(3.5, speed / 14);
-        track.style.filter = b > .35 ? `blur(${b.toFixed(2)}px)` : '';
-      }
-      const row = Math.round(pos);
-      if (row !== lastRow) { lastRow = row; if (now - lastTick > 40) { lastTick = now; sound('tick'); } }
-      if (t < 1) w.requestAnimationFrame(frame); else finish();
-    };
-    w.requestAnimationFrame(frame);
-    setTimeout(finish, dur + 1000);   // safety net (main-window timer): frames pause in background tabs, or the pop-out may be closed mid-spin
-  });
-}
-
-/* =====================================================================
-   Huddle actions
-   ===================================================================== */
-async function spin() {
+// Shows quick shuffles of the names, then settles on the order. The real order is decided and saved up front;
+// the animation is just for show (and a safety timer makes sure it always finishes).
+function randomize() {
   const h = state.huddle;
-  if (!h || h.current || ui.spinning) return;
-  const pool = queuePeople();
-  if (!pool.length) return;
+  if (!h || h.current || ui.busy) return;
+  const ids = shuffle(queuePeople().map(p => p.id));
+  if (!ids.length) return;
   ensureAudio();
-  const idx = randInt(pool.length), winner = pool[idx];
-  ui.spinning = true;
-  h.queue = h.queue.filter(id => id !== winner.id);          // decided up front; the animation is just for show
-  h.current = { id: winner.id, name: winner.name, phase: 'landed', startedAt: null, pausedAt: null, pausedMs: 0, warned: false, buzzed: false };
-  saveSession();
-  await runReel(pool, idx);
-  ui.spinning = false;
-  $('#sr').textContent = `${winner.name} is up`;
-  sound('chime');
-  if (state.data.settings.autoStart) startTimer(); else render();
+  h.queue = ids; h.ordered = true; saveSession();
+  const settle = () => { ui.busy = false; ui.fresh = true; sound('chime'); render(); };
+  if (ids.length < 2 || reduced()) { settle(); return; }
+  ui.busy = true;
+  const stage = $('#stage'); if (stage) stage.classList.add('shuffling');
+  const w = curWin(), t0 = w.performance.now(), dur = clamp(900 + ids.length * 70, 1100, 2000);
+  let finished = false;
+  const finish = () => { if (!finished) { finished = true; settle(); } };
+  const step = () => {
+    if (finished) return;
+    if (w.performance.now() - t0 >= dur) return finish();
+    const ul = $('#orderList');
+    if (ul) ul.innerHTML = shuffle(ids).map(person).filter(Boolean).map(plainRow).join('');
+    sound('tick');
+    w.setTimeout(step, 85);
+  };
+  step();
+  setTimeout(finish, dur + 1200);   // safety net on the main window (the pop-out may close, or frames may pause)
 }
 
-function startTimer() {
-  const cur = state.huddle && state.huddle.current;
-  if (!cur || cur.phase !== 'landed') return;
+function startNext() {
+  const h = state.huddle;
+  if (!h || h.current) return false;
+  while (h.queue.length) {
+    const p = person(h.queue.shift());
+    if (!p) continue;                                   // removed from the list during the huddle
+    h.current = { id: p.id, name: p.name, phase: 'running', startedAt: Date.now(), pausedAt: null, pausedMs: 0, warned: false, buzzed: false };
+    if (!h.beganAt) h.beganAt = h.current.startedAt;
+    $('#sr').textContent = `${p.name} is up`;
+    return true;
+  }
+  return false;
+}
+
+function beginHuddle() {
+  const h = state.huddle;
+  if (!h || h.current || ui.busy) return;
   ensureAudio();
-  Object.assign(cur, { phase: 'running', startedAt: Date.now(), pausedAt: null, pausedMs: 0, warned: false, buzzed: false });
-  saveSession(); render();
+  if (startNext()) { sound('chime'); saveSession(); render(); }
 }
 
 function togglePause() {
   const cur = state.huddle && state.huddle.current;
-  if (!cur || cur.phase === 'landed') return;
+  if (!cur) return;
   const now = Date.now();
   if (cur.phase === 'running') { cur.phase = 'paused'; cur.pausedAt = now; }
   else { cur.pausedMs += now - cur.pausedAt; cur.pausedAt = null; cur.phase = 'running'; }
@@ -769,35 +779,43 @@ function logCurrent(h) {
   h.current = null;
 }
 
+function advance(h) {                                    // after someone finishes or is skipped: the next person starts at once
+  if (startNext()) sound('chime');
+  else document.title = 'Huddle Timer';
+  saveSession(); render();
+}
+
 function doneTurn() {
   const h = state.huddle;
-  if (!h || !h.current || h.current.phase === 'landed') return;
-  logCurrent(h);
-  document.title = 'Huddle Timer';
-  saveSession(); render();
+  if (!h || !h.current) return;
+  logCurrent(h); advance(h);
 }
 
 function skipTurn() {
   const h = state.huddle;
-  if (!h || !h.current || h.current.phase !== 'landed') return;
+  if (!h || !h.current) return;
   h.notHere.push({ id: h.current.id, name: h.current.name });
-  h.current = null;
+  h.current = null; advance(h);
+}
+
+function skipPerson(id) {                                // the little x beside a name: not here today
+  const h = state.huddle;
+  if (!h || !h.queue.includes(id)) return;
+  const p = person(id);
+  h.queue = h.queue.filter(x => x !== id);
+  h.notHere.push({ id, name: p ? p.name : 'Someone' });
   saveSession(); render();
 }
 
 function finishHuddle() {
   const h = state.huddle; if (!h) return;
-  const pending = [];
-  if (h.current) {
-    if (h.current.phase === 'landed') pending.push({ id: h.current.id, name: h.current.name });
-    else logCurrent(h);
-    h.current = null;
-  }
-  h.queue.map(person).filter(Boolean).forEach(p => pending.push({ id: p.id, name: p.name }));
-  h.didntGo = pending; h.queue = [];
+  if (h.current) { logCurrent(h); }
+  h.didntGo = h.queue.map(person).filter(Boolean).map(p => ({ id: p.id, name: p.name }));
+  h.queue = [];
   h.endedAt = Date.now();
   state.screen = 'summary';
   saveSession(); render();
+  leaveStrip();
 }
 
 /* =====================================================================
@@ -858,10 +876,10 @@ const LISTENERS = [];
 function listen(type, fn) { LISTENERS.push([type, fn]); document.addEventListener(type, fn); }
 
 const actions = {
-  spin, startTimer, togglePause, doneTurn, skipTurn, popOut, popIn,
+  randomize, beginHuddle, togglePause, doneTurn, skipTurn, skipPerson, popOut, popIn,
   finish: finishHuddle,
-  goSetup() { state.screen = 'setup'; render(); },
-  backToHuddle() { state.screen = 'huddle'; render(); },
+  goSetup() { state.screen = 'setup'; leaveStrip(); render(); },
+  backToHuddle() { state.screen = 'huddle'; render(); enterStrip(); },
   async endHuddle() {
     const h = state.huddle;
     if ((h.current || h.queue.length) && !await ask("End the huddle now? Anyone who hasn't gone yet will be listed as not getting a turn.", 'End huddle')) return;
@@ -871,7 +889,7 @@ const actions = {
     const h = state.huddle, n = h.notHere.find(x => x.id === id);
     if (!n) return;
     h.notHere = h.notHere.filter(x => x.id !== id);
-    if (person(id)) h.queue.push(id);
+    if (person(id)) h.queue.push(id);                   // joins the end of the line
     saveSession(); render();
   },
   async startHuddle() {
@@ -880,11 +898,12 @@ const actions = {
     if (state.huddle && !state.huddle.endedAt && !await ask('A huddle is already in progress. Discard it and start a new one?', 'Start new huddle')) return;
     const s = state.data.settings;
     state.huddle = {
-      startedAt: Date.now(), endedAt: null, durationSec: s.seconds, warnSec: s.warnSec,
+      startedAt: Date.now(), beganAt: null, endedAt: null, durationSec: s.seconds, warnSec: s.warnSec, ordered: false,
       queue: present.map(p => p.id), log: [], current: null, didntGo: [],
       notHere: state.data.people.filter(p => !p.present).map(p => ({ id: p.id, name: p.name }))
     };
     state.screen = 'huddle'; saveSession(); render();
+    await enterStrip();
   },
   photo(id) { ui.photoFor = id; $('#photoInput').click(); },
   removePhoto(id) { const p = person(id); if (p) { p.photo = null; saveData(); render(); } },
@@ -919,7 +938,7 @@ const actions = {
 
 listen('click', e => {
   const el = e.target.closest('[data-action]');
-  if (!el || el.disabled || ui.spinning) return;
+  if (!el || el.disabled || ui.busy) return;
   if (e.detail > 0 && el.tagName === 'BUTTON') el.blur();      // so Space/Enter shortcuts keep working after a mouse click
   const row = el.closest('[data-id]');
   const fn = actions[el.dataset.action];
@@ -949,7 +968,7 @@ listen('change', e => {
   } else if (field === 'warnSec') {
     s.warnSec = clamp(toInt(t.value, 30), 0, 600); t.value = s.warnSec; saveData();
   } else if (field === 'sound') { s.sound = t.checked; saveData(); }
-  else if (field === 'autoStart') { s.autoStart = t.checked; saveData(); }
+  else if (field === 'autoStrip') { s.autoStrip = t.checked; saveData(); }
 });
 
 $('#photoInput').addEventListener('change', e => {
@@ -973,25 +992,32 @@ $('#restoreInput').addEventListener('change', e => {
   }
 }));
 
-// Keyboard: Space = spin / start / pause-resume, Enter = done
+// Keyboard: Space = randomize / start / pause-resume, Enter = done (and the next person starts)
 listen('keydown', e => {
-  if (dlg.open || e.repeat || ui.spinning || state.screen !== 'huddle' || !state.huddle) return;
+  if (dlg.open || e.repeat || ui.busy || state.screen !== 'huddle' || !state.huddle) return;
   if (e.target !== (e.target.ownerDocument || e.target).body) return;
   const h = state.huddle, cur = h.current;
   if (e.code === 'Space') {
     e.preventDefault();
-    if (!cur) spin(); else if (cur.phase === 'landed') startTimer(); else togglePause();
-  } else if (e.code === 'Enter' && cur && cur.phase !== 'landed') { e.preventDefault(); doneTurn(); }
+    if (cur) togglePause();
+    else if (queuePeople().length) { if (h.ordered) beginHuddle(); else randomize(); }
+  } else if (e.code === 'Enter' && cur) { e.preventDefault(); doneTurn(); }
 });
 
 /* =====================================================================
-   Pop-out: float the timer in an always-on-top window (Chrome / Edge "Document Picture-in-Picture").
-   The whole UI (#shell) is moved into that window and moved back when it closes; the app's state stays here.
+   Windows: centered setup -> narrow side strip -> back again.
+   - Installed app window: resize + move the window itself (Chrome/Edge allow this for installed apps).
+   - Otherwise: float the timer in an always-on-top pop-out window (Chrome / Edge "Document Picture-in-Picture").
+     The whole UI (#shell) is moved into that window and moved back when it closes; app state stays here.
+   - Anywhere else (e.g. Safari): nothing moves; the layout simply adapts if you make the window narrow.
    ===================================================================== */
+const STRIP_W = 360, STRIP_MAX = 520;
 const shell = $('#shell');
 const away = $('#away');
 let pip = null;                                  // the pop-out window while it is open
 const canPop = () => 'documentPictureInPicture' in window;
+const isInstalled = () => ['standalone', 'minimal-ui', 'window-controls-overlay'].some(m => matchMedia(`(display-mode: ${m})`).matches);
+const screenBox = () => { const s = window.screen; return { x: s.availLeft || 0, y: s.availTop || 0, w: s.availWidth, h: s.availHeight }; };
 
 // The clock ticks from whichever window shows the UI, because a hidden main window gets its timers throttled.
 let ticker = { win: null, id: 0 };
@@ -1006,7 +1032,8 @@ function startTicker() {
 async function popOut() {
   if (pip || !canPop()) return;
   try {
-    const w = await window.documentPictureInPicture.requestWindow({ width: 340, height: clamp(screen.availHeight - 140, 480, 780) });
+    const b = screenBox();
+    const w = await window.documentPictureInPicture.requestWindow({ width: STRIP_W, height: clamp(b.h - 100, 480, 900) });
     pip = w;
     w.document.documentElement.lang = 'en';
     w.document.head.append(document.head.querySelector('style').cloneNode(true));
@@ -1017,7 +1044,8 @@ async function popOut() {
     startTicker();
     w.addEventListener('pagehide', popIn);       // fires when the pop-out window is closed or sent back by the browser
     render();
-  } catch (e) { pip = null; doc = document; toast("Couldn't open the pop-out window here."); }
+    try { w.moveTo(b.x + b.w - STRIP_W - 12, b.y + 48); } catch (e) { /* the browser decides where it goes */ }
+  } catch (e) { pip = null; doc = document; toast("Couldn't open the floating window here."); }
 }
 
 function popIn() {
@@ -1029,6 +1057,30 @@ function popIn() {
   startTicker();
   render();
   try { w.close(); } catch (e) { /* already closed */ }
+}
+
+// Called when a huddle starts (from the Start huddle click) or is resumed after a refresh (no click: gesture = false).
+async function enterStrip({ gesture = true } = {}) {
+  if (!state.data.settings.autoStrip || pip) return;
+  if (isInstalled()) {
+    if (window.outerWidth <= STRIP_MAX) return;                       // already a strip
+    const b = screenBox();
+    try { window.resizeTo(STRIP_W, b.h); window.moveTo(b.x + b.w - STRIP_W, b.y); } catch (e) { /* not allowed here */ }
+    await sleep(300);
+    if (window.outerWidth <= STRIP_MAX) return;                       // it worked
+  }
+  if (!gesture) return;
+  if (canPop()) await popOut();
+  else if (!ui.tipShown) { ui.tipShown = true; toast('Tip: make this window narrow and put it beside Planner.'); }
+}
+
+// Called for Setup / summary: dock the pop-out back, or restore a centered window if the installed app is a narrow strip.
+function leaveStrip() {
+  if (pip) { popIn(); return; }
+  if (isInstalled() && window.outerWidth <= STRIP_MAX) {
+    const b = screenBox(), w = Math.min(980, b.w - 80), h = Math.min(860, b.h - 80);
+    try { window.resizeTo(w, h); window.moveTo(b.x + Math.round((b.w - w) / 2), b.y + Math.round((b.h - h) / 2)); } catch (e) { /* not allowed here */ }
+  }
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -1048,6 +1100,7 @@ document.addEventListener('visibilitychange', () => {
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* optional feature */ }));
   }
+  if (state.screen === 'huddle') enterStrip({ gesture: false }); else leaveStrip();
 })();
 })();
 </script>

@@ -1,8 +1,10 @@
 # Huddle Timer
 
-A simple stand-up (huddle) facilitator. Add your team, hit **SPIN** to pick who goes next,
-and a countdown starts for that person. When time runs out the clock turns red and keeps
-counting into negative numbers so everyone can see who ran over.
+A simple stand-up (huddle) facilitator. Add your team in a normal window, then start the huddle:
+the app shrinks into a narrow strip on the side of your screen, you press **Randomize order**, and
+everyone can see who is up and who is next. Each person gets a countdown. When time runs out the clock
+turns red and keeps counting into negative numbers so everyone can see who ran over. When you press
+**Done**, the next person's timer starts straight away.
 
 It is a single file (`index.html`) with no dependencies, no build step and no server.
 Everything runs in the browser, and nothing is ever uploaded.
@@ -13,18 +15,26 @@ Everything runs in the browser, and nothing is ever uploaded.
    Click a round picture to add a photo, or drag a photo from your computer onto someone's row.
 2. Set **Time per person** (for example 2 min).
 3. Untick **Here today** for anyone who is out.
-4. Press **Start huddle**, then **SPIN**.
-5. When the reel stops, press **Start timer**. Press **Done – next person** when they finish.
-6. When everyone has gone, press **See the summary**. **Copy summary** puts a short recap on your
-   clipboard that you can paste into the Teams chat.
+4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
+   "Beside Planner" below for how that works in each browser).
+5. Press **Randomize order**. The names shuffle and settle into a numbered list. Not happy with it?
+   Press **Randomize again**. Then press **Start** (it says who goes first).
+6. Each person's countdown runs. Press **Done** when they finish and the next person starts automatically
+   (the button names who is next). **Pause** stops the clock. The **Up next** list shows everyone
+   waiting, in order, with the next person highlighted.
+7. If someone isn't here, press the small **x** beside their name (or "isn't here - skip" for whoever's
+   up). They move to **Not here**, and **Add back** puts them at the end of the line.
+8. When everyone has gone, press **See the summary**. **Copy summary** puts a short recap on your
+   clipboard that you can paste into the Teams chat. The window goes back to normal size.
 
-Keyboard shortcuts during a huddle: **Space** = spin / start / pause / resume, **Enter** = done.
+Keyboard shortcuts during a huddle: **Space** = randomize / start / pause / resume, **Enter** = done
+(and start the next person).
 
-In a Teams meeting, use **Share > Window** (or Screen) and pick the browser window showing this page.
-The beeps only reach the other attendees if the **Include computer sound** option is ticked when you
-start sharing (if your version of Teams offers it); otherwise only you hear them.
+In a Teams meeting, use **Share > Screen** so people see the strip. The sounds (a chime when the next
+person starts, a beep when time is almost up, a tone when it runs out) only reach the other attendees
+if **Include computer sound** is ticked when you start sharing (if your version of Teams offers it);
+otherwise only you hear them.
 
-If someone arrives late, find them under **Not here** on the right and press **Add back**.
 If the page is refreshed or closed by accident mid-huddle, reopening it picks up where you left off.
 
 ### Where your list lives
@@ -51,21 +61,29 @@ list looks empty in the installed app, add the team once there, or use **Restore
 
 ## Beside Planner in a Teams meeting
 
-The app works as a narrow strip. Drag the window's edge until it is about 300&ndash;400 pixels wide and
-everything (the reel, the clock, the buttons, who's left) fits without scrolling.
+Setup uses a normal, centered window. When you press **Start huddle** the app moves into a narrow strip
+(about 360 pixels wide) on the right side of your screen, and everything (the clock, the buttons, the
+Up next list) fits in that strip. How that happens depends on how you opened it:
+
+- **Installed app (Chrome or Edge):** the app window itself resizes and moves to the right edge, then
+  returns to a centered window for Setup and the summary.
+- **Normal browser tab (Chrome or Edge):** the timer opens in a small floating window that stays above
+  your other windows, and the main tab shows "Bring it back here". The browser decides exactly where that
+  window appears, so drag it to the right edge once; it usually remembers.
+- **Safari or Firefox:** nothing can move automatically. Drag the window's edge to about 300-400 pixels
+  wide and put it beside Planner yourself; the layout adapts.
+
+You can turn the automatic move off under Setup > More options.
 
 1. In Planner, set the board to **Group by: Assigned to**, so each person has their own column.
-2. Put Planner in your browser on the left and the Huddle Timer window on the right, side by side.
+2. Put Planner in your browser on the left and the Huddle Timer strip on the right.
 3. In Teams choose **Share > Screen**. (**Window** only shares one window, so it can't show both.)
    The first time, macOS asks you to let Teams record the screen: System Settings > Privacy & Security >
    Screen Recording (called Screen & System Audio Recording on newer macOS versions).
-4. Spin. When the reel lands on someone, everyone looks at that person's Planner column.
+4. Randomize, start, and as each person comes up, everyone looks at their Planner column.
 
-**Keep it on top (Chrome and Edge):** click the small pop-out icon at the top of the app. The timer moves
-into a small floating window that stays above your other windows, so Planner can't cover it, and the
-main window shows a "Bring it back here" button. Close the floating window, or click its **Dock back**
-icon, to return. Safari and Firefox don't offer pop-out, so the button doesn't appear there; just keep
-the two windows side by side.
+You can also float the timer yourself at any time with the small pop-out icon at the top (Chrome and
+Edge only), and click **Dock back** to return.
 
 ## For the developer
 
@@ -105,13 +123,25 @@ loosened deliberately, adding only
   `file://` copy. If you change the list of cached files, bump `CACHE` in `sw.js`.
 - Service workers need `https://` or `localhost`, so test installs against the Pages URL or the local server.
 
-### Pop-out window
+### Huddle flow
 
-The pop-out uses the Document Picture-in-Picture API (Chrome / Edge 116+, desktop). The whole UI
-(`#shell`) is moved into the floating window and moved back on close; app state stays in the main page.
-Event listeners are registered through `listen()` so they can be replayed on the pop-out's document, and
-the clock interval and reel animation run in whichever window currently shows the UI (a hidden main
-window gets its timers throttled). The button only appears when `'documentPictureInPicture' in window`.
+`h.ordered` is false until **Randomize order** is pressed (queue is in list order), then true. `randomize()`
+decides and saves the order first and only then plays the shuffle animation, with a safety timer so the UI
+can never get stuck. `startNext()` takes the first id off `h.queue` and starts its timer; it runs from
+**Start** and from every Done/skip, which is what makes turns chain automatically. Saved sessions from the
+older "spin" version (a person in a `landed` phase) are converted on load.
+
+### Window handling (`enterStrip` / `leaveStrip`)
+
+- Installed app (`display-mode: standalone` etc.): `window.resizeTo` / `moveTo` to the strip, and it checks
+  `outerWidth` afterwards. If the browser ignored it, it falls back to the pop-out.
+- Otherwise the pop-out uses the Document Picture-in-Picture API (Chrome / Edge 116+, desktop; it needs the
+  click on Start huddle as its user gesture). The whole UI (`#shell`) is moved into the floating window and
+  moved back on close; app state stays in the main page. Event listeners are registered through `listen()`
+  so they can be replayed on the pop-out's document, and the clock interval and shuffle animation run in
+  whichever window currently shows the UI (a hidden main window gets its timers throttled).
+- Neither available (Safari, Firefox): nothing moves, and a one-time tip is shown.
+- Restoring: Setup / summary dock the pop-out back, or re-center an installed window that is strip-sized.
 
 ### Teams
 
