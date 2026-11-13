@@ -20,9 +20,10 @@ Everything runs in the browser, and nothing is ever uploaded.
 3. Untick **Here today** for anyone who is out.
 4. Press **Start huddle**. The window moves into a narrow strip on the right side of the screen (see
    "Beside Planner" below for how that works in each browser).
-5. Press **Randomize order**. A "drawing" screen appears with a slot reel: the names blur past, ticking,
-   and slow down until the reel clunks onto whoever goes first, with a flash, a ring and confetti (click it to
-   skip). Then everyone is dealt into a numbered list, with the first person in gold. Not happy with it?
+5. Press **Randomize order**. Every name leaves its row and whirls around the screen, then the orbits spiral
+   in and the names settle into a ring in the new order (number 1 at the top, going clockwise). The first
+   person lights up gold with a ring and confetti, and then everyone is dealt from the ring into the numbered
+   list, each row coming alive as its name lands (click anywhere to skip the show). Not happy with it?
    Press **Randomize again**. Then press **Start** (it says who goes first).
 6. Each person's countdown runs. Press **Done** when they finish and the next person starts automatically
    (the button names who is next). **Pause** stops the clock. The **Up next** list shows everyone
@@ -159,13 +160,17 @@ loosened deliberately, adding only
 
 `h.ordered` is false until **Randomize order** is pressed (queue is in list order), then true. `randomize()`
 decides and saves the order first and only then plays the show, with a safety timer (6.5 s) so the UI can
-never get stuck. Part 1 is a `.draw` overlay inside the stage: a long column of names that ends on the winner,
-moved by a time-based `requestAnimationFrame` loop (`idxAt()`: a decelerating curve, a small overshoot, a
-settle back), with a vertical-only SVG blur (`#vblur`, `feGaussianBlur`) whose strength follows the speed, a
-tick per name, and then a lock-in (ring, gold glow, `confetti()`, which lives on the page body so it keeps
-falling after the overlay is gone) and a fade; clicking it skips. Part 2 is `dealCards()`: the real list rows
-fly in from the middle of the stage (Web Animations API), followed by CSS keyframes (sheen, number pop, glow
-on #1). In a narrow window, sizes in the
+never get stuck. The show has three parts, all
+time-based and drawn on a frosted `.scr` screen placed exactly over the stage (it lives on the page body, so it
+survives the re-render): (1) copies of every list row (`chips`, which borrow the `.order li` styling, while the
+real rows are hidden by `.order.dealing`) leave their rows and whirl on their own elliptical orbits (random speed,
+direction and radius, a little pseudo-3D: near side bigger and brighter); (2) from `T0` the orbits spiral in
+(`place()`: a smooth deceleration onto each name's slot on a ring, number 1 at the top, clockwise), then the
+winner goes gold with a ring, `confetti()` and a "goes first" line; (3) `deal()` renders the real ordered list
+(hidden rows), and each chip flies to its row with the Web Animations API; when it lands, its row gets the class
+`in` (sheen, number pop, glow on #1) and the chip is removed. Rows scrolled out of view (a long list in a narrow
+window) get their name landing at the list's edge, fading. Clicking the screen skips straight to the finished
+list, and a safety timer (8 s) guarantees the UI can never get stuck. In a narrow window, sizes in the
 running view use `clamp()` with `vh` units and the running card grows to take leftover height, so a tall strip
 is filled instead of leaving empty space at the bottom. The running view never scrolls as a whole
 (`#app.is-huddle` is the window height with `overflow: hidden`): the running card keeps its height and the

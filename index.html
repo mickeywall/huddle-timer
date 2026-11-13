@@ -163,47 +163,43 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .order li { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); }
 .order .num { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: var(--accent); color: var(--accent-ink); font-variant-numeric: tabular-nums; }
 .order .oname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 1.05rem; }
-/* randomize, part 2: the names are dealt into the list from the middle of the stage (JS), then a sheen sweeps over each
-   row, the numbers pop in, and #1 gets a gold glow */
-.order.fresh li { position: relative; overflow: hidden; }
-.order.fresh li::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .3) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .9s ease-out both; animation-delay: calc(min(var(--i, 0), 16) * 60ms + 450ms); }
-.order.fresh .num { animation: numpop .55s cubic-bezier(.34, 1.56, .64, 1) both; animation-delay: calc(min(var(--i, 0), 16) * 60ms + 320ms); }
-.order.fresh li:first-child { border-color: var(--warn); animation: firstglow 1.5s ease-out .7s both; }
-.order.fresh li:first-child .num { background: var(--warn); color: #20160a; }
+/* randomize: a frosted screen over the stage where EVERY name whirls around, then spirals into a ring in the new order, and is
+   dealt from there into the numbered list. Each row comes alive (class "in") as its name lands on it. Click to skip. */
+.order.dealing li { visibility: hidden; }
+.order.dealing li.in { visibility: visible; }
+.order li.in { position: relative; overflow: hidden; }
+.order li.in::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .3) 50%, transparent 65%); transform: translateX(-130%); animation: sheen .8s ease-out both; }
+.order li.in .num { animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+.order li.in:first-child { animation: firstglow 1.5s ease-out both; }
+ol.order li:first-child { border-color: var(--warn); }
+ol.order li:first-child .num { background: var(--warn); color: #20160a; }
 @keyframes sheen { to { transform: translateX(130%); } }
 @keyframes numpop { from { transform: scale(0) rotate(-120deg); } to { transform: none; } }
 @keyframes firstglow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) 85%, transparent); } 100% { box-shadow: 0 0 0 22px transparent; } }
 
-/* randomize, part 1: a frosted "drawing" screen with a slot reel that spins fast, slows down and clicks onto whoever goes
-   first, then a flash, a ring, and confetti. Click it to skip. */
-.draw { position: absolute; inset: 0; z-index: 8; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 2.4vh, 22px); padding: 16px; cursor: pointer; text-align: center;
-  background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--accent) 26%, var(--panel)) 0%, color-mix(in srgb, var(--panel) 92%, transparent) 75%);
+.scr { position: fixed; z-index: 40; overflow: hidden; cursor: pointer; }
+.scr.go { pointer-events: none; cursor: default; }
+.scr-bg { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 16px 16px 18px; text-align: center;
+  background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--accent) 26%, var(--panel)) 0%, color-mix(in srgb, var(--panel) 90%, transparent) 78%);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: drawin .3s ease-out both; }
 @keyframes drawin { from { opacity: 0; } }
-.draw .aurora { position: absolute; left: 50%; top: 46%; width: max(130%, 620px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+.aurora { position: absolute; left: 50%; top: 48%; width: max(130%, 620px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
   background: conic-gradient(#6f8dff, #c58bff, #ff7a90, #f6b93b, #33d391, #6f8dff); filter: blur(48px); opacity: .34; animation: spinA 2.8s linear infinite; }
 @keyframes spinA { to { rotate: 360deg; } }
 .draw-title { position: relative; font-weight: 800; font-size: .8rem; letter-spacing: .24em; text-transform: uppercase; color: transparent; -webkit-background-clip: text; background-clip: text;
   background-image: linear-gradient(90deg, var(--muted) 20%, var(--text) 50%, var(--muted) 80%); background-size: 240% 100%; animation: shimmer 1.2s linear infinite; }
 @keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
-.reelwrap { --rh: clamp(52px, 10vh, 92px); position: relative; width: min(100%, 460px); height: calc(var(--rh) * 3); border-radius: 26px; box-shadow: var(--shadow), 0 0 0 1px var(--line);
-  background: color-mix(in srgb, var(--panel2) 78%, transparent); animation: reelin .45s cubic-bezier(.2, .9, .25, 1.15) both; }
-@keyframes reelin { from { transform: scale(.86); opacity: 0; } }
-.reel { position: absolute; inset: 0; overflow: hidden; border-radius: 26px; filter: url(#vblur);
-  -webkit-mask-image: linear-gradient(transparent 0, #000 30%, #000 70%, transparent 100%); mask-image: linear-gradient(transparent 0, #000 30%, #000 70%, transparent 100%); }
-.rtrack { will-change: transform; }
-.ri { height: var(--rh); display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 18px; opacity: .4; }
-.ri.cur { opacity: 1; }
-.ri .avatar.m { --s: calc(var(--rh) - 24px); }
-.ri .rn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; font-size: clamp(1.15rem, min(6cqw, 4.4vh), 2.1rem); }
-.sel { position: absolute; left: 8px; right: 8px; top: var(--rh); height: var(--rh); border-radius: 18px; pointer-events: none; border: 2px solid var(--accent);
-  box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 0 18px color-mix(in srgb, var(--accent) 22%, transparent); transition: border-color .15s, box-shadow .15s; }
-.reelwrap.locked .sel { border-color: var(--warn); box-shadow: 0 0 40px color-mix(in srgb, var(--warn) 75%, transparent), inset 0 0 22px color-mix(in srgb, var(--warn) 28%, transparent); }
-.shock { position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 3px solid var(--warn); pointer-events: none; opacity: 0; }
-.draw-cap { position: relative; min-height: 2.4em; font-size: clamp(1.1rem, 5cqw, 1.8rem); font-weight: 800; opacity: 0; transform: translateY(12px) scale(.94); transition: opacity .25s, transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.draw-cap { position: relative; margin-top: auto; min-height: 2.2em; font-size: clamp(1.1rem, 5cqw, 1.7rem); font-weight: 800; opacity: 0; transform: translateY(12px) scale(.94); transition: opacity .25s, transform .35s cubic-bezier(.34, 1.56, .64, 1); }
 .draw-cap.show { opacity: 1; transform: none; }
 .draw-cap .gt { background: linear-gradient(90deg, #ffd66b, #ff7a90, #c58bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .draw-skip { position: relative; font-size: .72rem; color: var(--muted); opacity: .7; }
+/* the flying names: copies of the list rows (they borrow the .order row styling), moved around by script */
+.scr .chips { position: absolute; inset: 0; margin: 0; padding: 0; display: block; list-style: none; }
+.scr .chips li { position: absolute; left: 0; top: 0; margin: 0; width: var(--cw); transform-origin: 50% 50%; will-change: transform, opacity; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
+.scr .chips li .x, .scr .chips li .num { display: none; }
+.scr .chips li.numbered .num { display: grid; animation: numpop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+.scr .chips li.gold { border-color: var(--warn); box-shadow: 0 0 30px color-mix(in srgb, var(--warn) 75%, transparent); transition: transform .45s cubic-bezier(.34, 1.56, .64, 1); }
+.shock { position: absolute; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 3px solid var(--warn); pointer-events: none; opacity: 0; }
 .confetti { position: fixed; width: 9px; height: 15px; border-radius: 2px; pointer-events: none; z-index: 60; will-change: transform; }
 .x { flex: none; border: 0; background: none; color: var(--muted); width: 28px; height: 28px; border-radius: 8px; font-size: .95rem; }
 .x:hover { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
@@ -552,7 +548,7 @@ function sanitizeHuddle(h) {
   return out;
 }
 
-const ui = { busy: false, fresh: false, storageOk: true, photoFor: null, tipShown: false };
+const ui = { busy: false, deal: false, storageOk: true, photoFor: null, tipShown: false };
 
 function loadData() {
   try { const raw = localStorage.getItem(KEY); if (raw) return cleanData(JSON.parse(raw)); } catch (e) { ui.storageOk = false; }
@@ -789,12 +785,12 @@ function stageHTML(h) {
         <ul class="order" id="orderList">${pool.map((p, i) => orderRow(p, 0, i)).join('')}</ul>
       </div></section>`;
     }
-    const fresh = ui.fresh; ui.fresh = false;
+    const deal = ui.deal; ui.deal = false;
     return `<section class="stage" id="stage" data-level="idle"><div class="prep">
       <h2>Today's order</h2>
       <button class="btn primary big flexy" data-action="beginHuddle">▶ <span class="ellip">Start – ${esc(pool[0].name)} goes first</span><kbd>Space</kbd></button>
       <button class="btn flexy" data-action="randomize">${ICON_SHUFFLE}<span class="ellip">Randomize again</span></button>
-      <ol class="order ${fresh ? 'fresh' : ''}" id="orderList">${pool.map((p, i) => orderRow(p, i + 1, i)).join('')}</ol>
+      <ol class="order ${deal ? 'dealing' : ''}" id="orderList">${pool.map((p, i) => orderRow(p, i + 1, i)).join('')}</ol>
     </div></section>`;
   }
 
@@ -907,30 +903,14 @@ function confetti(cx, cy, count = 90) {
   }
 }
 
-// The second half of Randomize: after the reel, the names are dealt into the numbered list from the middle of the stage,
-// one after another, each with a soft pip (the sheen, the popping numbers and the glow on #1 are CSS, see .order.fresh).
-function dealCards() {
-  if (reduced()) return;
-  const stage = $('#stage'), rows = doc.querySelectorAll('#orderList li');
-  if (!stage || !rows.length) return;
-  const w = curWin(), sb = stage.getBoundingClientRect(), ox = sb.left + sb.width / 2, oy = sb.top + Math.min(sb.height * .3, 220);
-  const gap = Math.min(60, 900 / rows.length);                       // everyone is dealt within about a second
-  rows.forEach((li, i) => {
-    const b = li.getBoundingClientRect(), d = i * gap, side = i % 2 ? 1 : -1;
-    li.animate([
-      { transform: `translate(${ox - (b.left + b.width / 2)}px, ${oy - (b.top + b.height / 2)}px) scale(.3) rotate(${side * (10 + Math.random() * 14)}deg)`, opacity: 0 },
-      { opacity: 1, offset: .25 },
-      { transform: 'none', opacity: 1 }
-    ], { duration: 680, delay: d, easing: 'cubic-bezier(.2, .85, .25, 1.1)', fill: 'backwards' });
-    if (i < 12) w.setTimeout(() => sound('deal', i), d + 140);
-  });
-}
-
-// Randomize. The real order is decided and saved first; everything after that is show:
-//   1. a frosted "drawing" screen with a slot reel: the names blur past (a vertical motion blur that fades as it slows),
-//      tick faster and then slower, and the reel clunks onto whoever goes first, with a ring, a gold glow and confetti;
-//   2. the screen fades and the names are dealt into the numbered list (dealCards).
-// Click the drawing screen to skip it. A safety timer makes sure the UI can never get stuck.
+// Randomize. The real order is decided and saved first; everything after that is show, and it shows ALL the names:
+//   1. every name leaves its row and whirls around the stage on its own orbit (different speeds, directions and sizes,
+//      a little pseudo-3D: the near side is bigger and brighter), with ticks that slow down;
+//   2. the orbits spiral in and the names settle into a ring in the NEW order (number 1 at the top, going clockwise);
+//      the first speaker lights up gold with a ring, confetti and a "goes first" line;
+//   3. the names are dealt from the ring into the numbered list, one row at a time (each row comes alive as its name lands).
+// Everything is time-based (so it is smooth at any frame rate), clicking the screen skips it, and a safety timer makes
+// sure the UI can never get stuck.
 function randomize() {
   const h = state.huddle;
   if (!h || h.current || ui.busy) return;
@@ -938,79 +918,122 @@ function randomize() {
   if (!ids.length) return;
   ensureAudio();
   h.queue = ids; h.ordered = true; saveSession();
-  const w = curWin();
-  const settle = () => { ui.busy = false; ui.fresh = true; render(); dealCards(); };
-  const stage = $('#stage');
-  if (ids.length < 2 || reduced() || !stage) { sound('chime'); settle(); return; }
+  const w = curWin(), stage = $('#stage'), ul = $('#orderList');
+  ui.deal = false;
+  if (ids.length < 2 || reduced() || !stage || !ul || !ul.children.length) { sound('chime'); render(); return; }
   ui.busy = true;
 
-  // A long column of names that ends on the winner (ids[0]), with a spare name above and below to fill the empty rows.
-  const rnd = avoid => { let id, n = 0; do { id = ids[randInt(ids.length)]; } while (avoid.includes(id) && n++ < 12); return id; };
-  const L = clamp(ids.length * 3, 28, 46), seq = [rnd([])];
-  for (let i = 1; i < L; i++) seq.push(rnd(i >= L - 3 ? [seq[i - 1], ids[0]] : [seq[i - 1]]));
-  seq.push(ids[0]);
-  const items = [rnd([seq[0]]), ...seq, rnd([ids[0]])];
-  const W = items.length - 2;                                        // the winner's place in the column; the reel starts on item 1
-  const ri = (id, k) => { const p = person(id); return `<div class="ri${k === 1 ? ' cur' : ''}">${avatar(p, 'm')}<span class="rn">${esc(p.name)}</span></div>`; };
-  const draw = doc.createElement('div');
-  draw.className = 'draw'; draw.id = 'draw';
-  draw.innerHTML = `<div class="aurora"></div>
-    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="vblur" x="0" y="-10%" width="100%" height="120%"><feGaussianBlur id="vblurF" stdDeviation="0 0"/></filter></svg>
-    <div class="draw-title">Drawing the order</div>
-    <div class="reelwrap" id="reelWrap"><div class="reel"><div class="rtrack" id="rtrack">${items.map(ri).join('')}</div></div><div class="sel"></div><div class="shock"></div></div>
-    <div class="draw-cap" id="drawCap"><span class="em">🎉</span> <span class="gt">${esc(person(ids[0]).name)} goes first!</span></div>
-    <div class="draw-skip">Click to skip</div>`;
-  stage.appendChild(draw);
-  const track = $('#rtrack'), wrap = $('#reelWrap'), cap = $('#drawCap'), blur = $('#vblurF');
-  const rh = wrap.clientHeight / 3 || 70;
+  const N = ids.length, TWO = Math.PI * 2;
+  const T0 = 900, DUR = 1100, TEND = T0 + DUR, G = 380, HOLD = 750;   // free swirl until T0, spiral in until TEND, then the lock-in
+  const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
 
-  const D = 2100, OVER = .3, BACK = 260, HOLD = 1000;                // the spin, the little overshoot, the settle back, the pause on the winner
-  const easeIO = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-  const idxAt = ms => ms < D ? 1 + (W - 1 + OVER) * (1 - Math.pow(1 - ms / D, 3.2)) : W + OVER * (1 - easeIO(clamp((ms - D) / BACK, 0, 1)));
-  let finished = false, locked = false, start = 0, lastIdx = 1, lastMs = 0, lastRound = 1, lastTick = -99;
-  const finish = () => { if (!finished) { finished = true; settle(); } };
-  const leave = () => {
-    if (finished) return;
-    draw.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: 'forwards' }).onfinish = finish;
-    w.setTimeout(finish, 450);
+  // A frosted screen exactly over the stage, holding a copy of every row. The rows themselves are hidden meanwhile.
+  const startIds = Array.from(ul.children).map(li => li.dataset.id).filter(id => person(id));
+  const rowOf = new Map(Array.from(ul.children).map(li => [li.dataset.id, li]));
+  const sb = stage.getBoundingClientRect(), r0 = rowOf.get(startIds[0]).getBoundingClientRect();
+  const W = sb.width, H = sb.height, w0 = r0.width, h0 = r0.height;
+  const scr = doc.createElement('div');
+  scr.className = 'scr';
+  scr.style.cssText = `left:${sb.left}px;top:${sb.top}px;width:${W}px;height:${H}px;border-radius:${getComputedStyle(stage).borderRadius};--cw:${w0}px`;
+  scr.innerHTML = `<div class="scr-bg"><div class="aurora"></div><div class="draw-title">Shuffling the order</div>
+      <div class="draw-cap" id="drawCap"><span class="em">🎉</span> <span class="gt">${esc(person(ids[0]).name)} goes first!</span></div>
+      <div class="draw-skip">Click to skip</div></div>
+    <ul class="order chips">${startIds.map(id => { const k = ids.indexOf(id); return orderRow(person(id), k + 1, k); }).join('')}</ul><div class="shock"></div>`;
+  doc.body.appendChild(scr);
+  ul.classList.add('dealing');
+
+  // The ring (an ellipse in the middle of the stage) and each name's own orbit.
+  const s0 = clamp(Math.min(.62 - N * .012, W * .66 / w0), .28, .6);   // size of a name while it flies (more names: smaller)
+  const cx = W / 2, cy = H * .5 - 6;
+  const Rx = Math.max(24, W / 2 - w0 * s0 * 1.2 / 2 - 14), Ry = clamp(H * .5 - 72, 36, 300);
+  const chips = Array.from(scr.querySelectorAll('.chips li'));
+  const P = chips.map((el, i) => {
+    const id = startIds[i], k = ids.indexOf(id), r = rowOf.get(id).getBoundingClientRect();
+    const om = (Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 3);   // its own speed and direction (rad/s)
+    const de = Math.random() * TWO, thT = -Math.PI / 2 + TWO * k / N;     // starting angle, and its place on the ring
+    const phi0 = de + om * T0 / 1000;
+    const phi0p = phi0 + TWO * Math.round((-om * DUR / 2000 - phi0) / TWO);   // spiral in: decelerate smoothly onto the ring slot
+    return { el, k, om, de, thT, phi0p, eps: phi0p + om * DUR / 2000, R0: .3 + Math.random() * .85, ph: Math.random() * TWO,
+      sx: clamp(r.left - sb.left + r.width / 2, 0, W), sy: clamp(r.top - sb.top + r.height / 2, 0, H), t: '', op: 1 };
+  });
+  const place = (p, ms) => {
+    const sec = ms / 1000, u = clamp((ms - T0) / DUR, 0, 1), e = easeIO(u);
+    const off = ms <= T0 ? p.de + p.om * sec : p.phi0p + p.om * (DUR / 1000) * (u - u * u / 2) - p.eps * e;
+    const rf = (p.R0 + (1 - p.R0) * e) * (1 + .1 * Math.sin(sec * p.om * .8 + p.ph) * (1 - e));
+    const th = p.thT + off, depth = (Math.sin(th) + 1) / 2;                // depth: 0 = far side (top), 1 = near side (bottom)
+    const g = easeOut(clamp(ms / G, 0, 1));                                // first it leaves its row and flies to its orbit
+    const x = p.sx + (cx + Math.cos(th) * Rx * rf - p.sx) * g, y = p.sy + (cy + Math.sin(th) * Ry * rf - p.sy) * g;
+    const sc = 1 + (s0 * (.8 + .4 * depth) - 1) * g, rot = Math.cos(th) * 9 * (1 - e) * g;
+    p.op = +(1 + (.55 + .45 * depth - 1) * g).toFixed(2);
+    p.t = `translate(${(x - w0 / 2).toFixed(1)}px, ${(y - h0 / 2).toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(1)}deg)`;
+    p.el.style.transform = p.t; p.el.style.opacity = p.op; p.el.style.zIndex = Math.round(depth * 100);
   };
-  const lock = () => {
-    if (locked || finished) return;
+
+  let done = false, locked = false, rendered = false, start = 0, lastTick = -99;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    if (!rendered) { rendered = true; render(); }                    // skipped (or stuck): just show the finished list
+    else { const l = $('#orderList'); if (l) l.classList.remove('dealing'); }
+    scr.remove(); ui.busy = false;
+  };
+  const deal = () => {                                               // part 3: from the ring into the list
+    if (done) return;
+    rendered = true; ui.deal = true; render();
+    scr.classList.add('go');
+    scr.querySelector('.scr-bg').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'forwards' });
+    const list = $('#orderList'), rows = Array.from(list.children), box = list.getBoundingClientRect(), cr = scr.getBoundingClientRect();
+    const gap = Math.min(55, 800 / N);
+    let last = 0;
+    P.forEach(p => {
+      const row = rows[p.k];
+      if (!row) { p.el.remove(); return; }
+      const rr = row.getBoundingClientRect();
+      const out = rr.top < box.top - 1 || rr.bottom > box.bottom + 1;   // a row scrolled out of view: its name lands at the edge and fades
+      const top = out ? clamp(rr.top, box.top, Math.max(box.top, box.bottom - rr.height)) : rr.top;
+      const delay = p.k * gap;
+      last = Math.max(last, delay + 620);
+      p.el.classList.add('numbered');
+      const a = p.el.animate([{ transform: p.t, opacity: p.op },
+        { transform: `translate(${(rr.left - cr.left).toFixed(1)}px, ${(top - cr.top).toFixed(1)}px) scale(1) rotate(0deg)`, opacity: out ? 0 : 1 }],
+        { duration: 620, delay, easing: 'cubic-bezier(.2, .85, .25, 1.1)', fill: 'both' });
+      const land = () => { if (!row.classList.contains('in')) { row.classList.add('in'); p.el.remove(); } };   // the name arrives: its row comes alive
+      a.onfinish = land;
+      w.setTimeout(land, delay + 660);                                // a timer too, in case animation events are held back
+      if (p.k < 12) w.setTimeout(() => sound('deal', p.k), delay + 200);
+    });
+    w.setTimeout(finish, last + 150);
+  };
+  const lock = () => {                                               // part 2's finish: the ring is complete
     locked = true;
-    track.style.transform = `translate3d(0, ${-(W - 1) * rh}px, 0)`;
-    blur.setAttribute('stdDeviation', '0 0');
-    Array.from(track.children).forEach((el, k) => el.classList.toggle('cur', k === W));
-    wrap.classList.add('locked'); cap.classList.add('show');
+    P.forEach(p => place(p, TEND));
+    const win = P.find(p => p.k === 0);
+    win.el.classList.add('gold'); win.el.style.zIndex = 200; void win.el.offsetWidth;
+    win.t = win.t.replace(/scale\([^)]*\)/, `scale(${(s0 * 1.6).toFixed(3)})`).replace(/rotate\([^)]*\)/, 'rotate(0deg)'); win.op = 1;
+    win.el.style.transform = win.t; win.el.style.opacity = 1;
+    $('#drawCap').classList.add('show');
     $('#sr').textContent = `${person(ids[0]).name} goes first`;
     sound('lock');
-    wrap.querySelector('.shock').animate([{ transform: 'scale(.3)', opacity: .9 }, { transform: 'scale(4.6)', opacity: 0 }], { duration: 850, easing: 'cubic-bezier(.1, .7, .3, 1)' });
-    wrap.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }], { duration: 440, easing: 'ease-out' });
-    const r = wrap.getBoundingClientRect();
-    confetti(r.left + r.width / 2, r.top + r.height / 2);
-    w.setTimeout(leave, HOLD);
+    const shock = scr.querySelector('.shock');
+    shock.style.left = cx + 'px'; shock.style.top = cy + 'px';
+    shock.animate([{ transform: 'scale(.3)', opacity: .9 }, { transform: 'scale(5)', opacity: 0 }], { duration: 850, easing: 'cubic-bezier(.1, .7, .3, 1)' });
+    confetti(sb.left + cx, sb.top + cy);
+    w.setTimeout(deal, HOLD);
   };
   const frame = () => {
-    if (finished || locked) return;
-    const ms = Date.now() - start, idx = idxAt(ms), r = Math.round(idx);
-    track.style.transform = `translate3d(0, ${-(idx - 1) * rh}px, 0)`;
-    if (r !== lastRound) {                                           // a new name is in the middle: light it up, and tick
-      if (track.children[lastRound]) track.children[lastRound].classList.remove('cur');
-      if (track.children[r]) track.children[r].classList.add('cur');
-      lastRound = r;
-      if (ms < D && ms - lastTick > 55) { lastTick = ms; sound('tick', Math.min(14, ms / D * 14)); }
-    }
-    const dt = (ms - lastMs) / 1000;
-    if (dt > .004) {                                                 // blur follows the speed: heavy at first, gone when it stops
-      blur.setAttribute('stdDeviation', `0 ${clamp(Math.abs(idx - lastIdx) * rh / dt / 650, 0, 9).toFixed(1)}`);
-      lastIdx = idx; lastMs = ms;
-    }
-    if (ms >= D + BACK) lock(); else w.requestAnimationFrame(frame);
+    if (done || locked) return;
+    const ms = Date.now() - start;
+    P.forEach(p => place(p, Math.min(ms, TEND)));
+    if (ms - lastTick > 55 + 200 * Math.pow(Math.min(1, ms / TEND), 2)) { lastTick = ms; sound('tick', Math.min(14, ms / TEND * 14)); }   // ticks slow down
+    if (ms >= TEND) lock(); else w.requestAnimationFrame(frame);
   };
-  draw.addEventListener('click', finish);
+  scr.addEventListener('click', finish);
   start = Date.now();
+  P.forEach(p => place(p, 0));
   sound('whoosh');
   w.requestAnimationFrame(frame);
-  setTimeout(finish, 6500);   // safety net on the main window (the pop-out may close, or frames may pause in a hidden window)
+  setTimeout(finish, 8000);   // safety net on the main window (the pop-out may close, or frames may pause in a hidden window)
 }
 
 function startNext() {
